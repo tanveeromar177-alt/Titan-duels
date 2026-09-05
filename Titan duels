@@ -472,7 +472,7 @@ local function createGUI()
 
     -- BORDE
     local border = Instance.new("UIStroke", mainFrame)
-    border.Color = Color3.fromRGB(42, 75, 124) -- blue
+    border.Color = Color3.fromRGB(100, 180, 230) -- blue
 
     -- ==========================================================
     -- CONTENIDO
@@ -555,7 +555,7 @@ local function createGUI()
     -- Barra de progreso (fill) â€“ YELLOW
     progressFill = Instance.new("Frame", barBg)
     progressFill.Size = UDim2.new(0, 0, 1, 0)
-    progressFill.BackgroundColor3 = Color3.fromRGB(249, 211, 66) -- yellow
+    progressFill.BackgroundColor3 = Color3.fromRGB(180, 230, 255) -- yellow
     progressFill.ZIndex = 12
     Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
     table.insert(mainFrameObjects, progressFill)
@@ -566,7 +566,7 @@ local function createGUI()
     progressPct.Position = UDim2.new(pctXPos, -15 * currentScale, 0, pctYPos)
     progressPct.BackgroundTransparency = 1
     progressPct.Text = "0%"
-    progressPct.TextColor3 = Color3.fromRGB(249, 211, 66) -- yellow
+    progressPct.TextColor3 = Color3.fromRGB(180, 230, 255) -- yellow
     progressPct.Font = Enum.Font.GothamBlack
     progressPct.TextSize = pctFont
     progressPct.ZIndex = 13
@@ -578,7 +578,7 @@ local function createGUI()
     local v1Frame = Instance.new("Frame", mainFrame)
     v1Frame.Size = UDim2.new(0, v1SizeX, 0, v1SizeY)
     v1Frame.Position = UDim2.new(0.5, -(lockSize / 2) - v1SizeX - 6 * currentScale, lockYPos, v1YOffset)
-    v1Frame.BackgroundColor3 = Color3.fromRGB(42, 75, 124) -- blue
+    v1Frame.BackgroundColor3 = Color3.fromRGB(100, 180, 230) -- blue
     v1Frame.BackgroundTransparency = 0.3
     v1Frame.BorderSizePixel = 0
     v1Frame.ZIndex = 14
@@ -586,7 +586,7 @@ local function createGUI()
     table.insert(mainFrameObjects, v1Frame)
     
     local v1Border = Instance.new("UIStroke", v1Frame)
-    v1Border.Color = Color3.fromRGB(249, 211, 66) -- yellow
+    v1Border.Color = Color3.fromRGB(180, 230, 255) -- yellow
     v1Border.Thickness = 1.5
     
     local v1Label = Instance.new("TextLabel", v1Frame)
@@ -594,7 +594,7 @@ local function createGUI()
     v1Label.Position = UDim2.new(0, 0, 0, 0)
     v1Label.BackgroundTransparency = 1
     v1Label.Text = "V1"
-    v1Label.TextColor3 = Color3.fromRGB(249, 211, 66) -- yellow
+    v1Label.TextColor3 = Color3.fromRGB(180, 230, 255) -- yellow
     v1Label.Font = Enum.Font.GothamBlack
     v1Label.TextSize = 9 * currentScale
     v1Label.TextXAlignment = Enum.TextXAlignment.Center
@@ -611,7 +611,7 @@ local function createGUI()
     lockBtn.Position = UDim2.new(0.5, -(lockSize / 2), lockYPos, -(lockSize / 2))
     lockBtn.BackgroundTransparency = 1
     lockBtn.Text = "ðŸ”’"
-    lockBtn.TextColor3 = Color3.fromRGB(249, 211, 66) -- yellow
+    lockBtn.TextColor3 = Color3.fromRGB(180, 230, 255) -- yellow
     lockBtn.Font = Enum.Font.GothamBlack
     lockBtn.TextSize = 12 * currentScale
     lockBtn.ZIndex = 15
@@ -626,7 +626,7 @@ local function createGUI()
     minusBtn.Position = UDim2.new(0.5, lockSize / 2 + 4 * currentScale, lockYPos, -(btnSize / 2))
     minusBtn.BackgroundTransparency = 1
     minusBtn.Text = "âˆ’"
-    minusBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+    minusBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
     minusBtn.Font = Enum.Font.GothamBlack
     minusBtn.TextSize = 12 * currentScale
     minusBtn.ZIndex = 15
@@ -638,7 +638,7 @@ local function createGUI()
     plusBtn.Position = UDim2.new(0.5, lockSize / 2 + btnSize + 10 * currentScale, lockYPos, -(btnSize / 2))
     plusBtn.BackgroundTransparency = 1
     plusBtn.Text = "+"
-    plusBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+    plusBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
     plusBtn.Font = Enum.Font.GothamBlack
     plusBtn.TextSize = 12 * currentScale
     plusBtn.ZIndex = 15
@@ -651,10 +651,10 @@ local function createGUI()
     local toggleBtn = Instance.new("TextButton", mainFrame)
     toggleBtn.Size = UDim2.new(0, toggleW, 0, toggleH)
     toggleBtn.Position = UDim2.new(1, toggleX, 0.5, -(toggleH / 2))
-    toggleBtn.BackgroundColor3 = Color3.fromRGB(42, 75, 124) -- blue
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 180, 230) -- blue
     toggleBtn.BackgroundTransparency = 0.3
     toggleBtn.Text = "OFF"
-    toggleBtn.TextColor3 = Color3.fromRGB(249, 211, 66) -- yellow
+    toggleBtn.TextColor3 = Color3.fromRGB(180, 230, 255) -- yellow
     toggleBtn.Font = Enum.Font.GothamBlack
     toggleBtn.TextSize = 10 * currentScale
     toggleBtn.ZIndex = 14
@@ -662,7 +662,7 @@ local function createGUI()
     table.insert(mainFrameObjects, toggleBtn)
     
     local toggleBorder = Instance.new("UIStroke", toggleBtn)
-    toggleBorder.Color = Color3.fromRGB(249, 211, 66)
+    toggleBorder.Color = Color3.fromRGB(180, 230, 255)
     toggleBorder.Thickness = 1
     table.insert(mainFrameObjects, toggleBorder)
 
@@ -738,46 +738,46 @@ local function createGUI()
     -- ==========================================================
     local function setColorsOff()
         -- OFF state: dark background, blue borders, yellow text
-        border.Color = Color3.fromRGB(42, 75, 124)
-        v1Border.Color = Color3.fromRGB(249, 211, 66)
-        v1Label.TextColor3 = Color3.fromRGB(249, 211, 66)
-        v1Frame.BackgroundColor3 = Color3.fromRGB(42, 75, 124)
-        progressFill.BackgroundColor3 = Color3.fromRGB(249, 211, 66)
+        border.Color = Color3.fromRGB(100, 180, 230)
+        v1Border.Color = Color3.fromRGB(180, 230, 255)
+        v1Label.TextColor3 = Color3.fromRGB(180, 230, 255)
+        v1Frame.BackgroundColor3 = Color3.fromRGB(100, 180, 230)
+        progressFill.BackgroundColor3 = Color3.fromRGB(180, 230, 255)
         barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         label.TextColor3 = Color3.fromRGB(220, 220, 220)
         byLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
         progressRadLbl.TextColor3 = Color3.fromRGB(200, 200, 200)
-        progressPct.TextColor3 = Color3.fromRGB(249, 211, 66)
-        minusBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
-        plusBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+        progressPct.TextColor3 = Color3.fromRGB(180, 230, 255)
+        minusBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
+        plusBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
         if isLocked then
-            lockBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+            lockBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
         end
-        toggleBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
-        toggleBorder.Color = Color3.fromRGB(249, 211, 66)
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(42, 75, 124)
+        toggleBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
+        toggleBorder.Color = Color3.fromRGB(180, 230, 255)
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 180, 230)
     end
 
     local function setColorsOn()
         -- ON state: brighter blue, yellow accents
-        border.Color = Color3.fromRGB(100, 180, 255)
-        v1Border.Color = Color3.fromRGB(249, 211, 66)
-        v1Label.TextColor3 = Color3.fromRGB(249, 211, 66)
-        v1Frame.BackgroundColor3 = Color3.fromRGB(30, 60, 100)
-        progressFill.BackgroundColor3 = Color3.fromRGB(249, 211, 66)
+        border.Color = Color3.fromRGB(160, 220, 255)
+        v1Border.Color = Color3.fromRGB(180, 230, 255)
+        v1Label.TextColor3 = Color3.fromRGB(180, 230, 255)
+        v1Frame.BackgroundColor3 = Color3.fromRGB(80, 150, 210)
+        progressFill.BackgroundColor3 = Color3.fromRGB(180, 230, 255)
         barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
         label.TextColor3 = Color3.fromRGB(255, 255, 255)
         byLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
         progressRadLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-        progressPct.TextColor3 = Color3.fromRGB(249, 211, 66)
-        minusBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
-        plusBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+        progressPct.TextColor3 = Color3.fromRGB(180, 230, 255)
+        minusBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
+        plusBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
         if isLocked then
-            lockBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+            lockBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
         end
-        toggleBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
-        toggleBorder.Color = Color3.fromRGB(249, 211, 66)
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
+        toggleBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
+        toggleBorder.Color = Color3.fromRGB(180, 230, 255)
+        toggleBtn.BackgroundColor3 = Color3.fromRGB(130, 200, 255)
     end
 
     -- ==========================================================
@@ -786,11 +786,11 @@ local function createGUI()
     local function actualizarCandado()
         if isLocked then
             lockBtn.Text = "ðŸ”’"
-            lockBtn.TextColor3 = Color3.fromRGB(249, 211, 66)
+            lockBtn.TextColor3 = Color3.fromRGB(180, 230, 255)
             mainFrame.Draggable = false
         else
             lockBtn.Text = "ðŸ”“"
-            lockBtn.TextColor3 = Color3.fromRGB(100, 180, 255) -- light blue
+            lockBtn.TextColor3 = Color3.fromRGB(160, 220, 255) -- light blue
             mainFrame.Draggable = true
         end
     end
