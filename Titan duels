@@ -606,13 +606,13 @@ end
                                                 end
                                             end
 
-                                            return temporaryValue79
+                                            return 85
                                         end
 
                                         stealSettings = {
                                             StealRadius = 60,
                                             StealDuration = 1.3,
-                                            NormalStealPausePercent = 75,
+                                            NormalStealPausePercent = 85,
                                         }
 
                                         autoStealState = { AutoSteal = true }
@@ -13632,9 +13632,9 @@ end
 
                                     instance6.Activated:Connect(function()
                                         conditionFlag28 = not conditionFlag28
-                                        TweenService:Create(instance7, TweenInfo.new(0.16), { BackgroundColor3 = conditionFlag28 and dataTable37.accent or Color3.fromRGB(0, 0, 0) }):Play()
+                                        TweenService:Create(instance7, TweenInfo.new(0), { BackgroundColor3 = conditionFlag28 and dataTable37.accent or Color3.fromRGB(0, 0, 0) }):Play()
 
-                                        TweenService:Create(frame4, TweenInfo.new(0.16), {
+                                        TweenService:Create(frame4, TweenInfo.new(0), {
                                             BackgroundColor3 = conditionFlag28 and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(238, 238, 245),
                                             Position = conditionFlag28 and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
                                         }):Play()
@@ -13960,11 +13960,11 @@ end
                                     clone.Parent = frame4
 
                                     textButton2.Activated:Connect(function()
-                                        TweenService:Create(frame5, TweenInfo.new(0.14), { Position = UDim2.new(0, 4, 0, 4) }):Play()
+                                        TweenService:Create(frame5, TweenInfo.new(0), { Position = UDim2.new(0, 4, 0, 4) }):Play()
                                     end)
 
                                     clone.Activated:Connect(function()
-                                        TweenService:Create(frame5, TweenInfo.new(0.14), { Position = UDim2.new(0.5, 0, 0, 4) }):Play()
+                                        TweenService:Create(frame5, TweenInfo.new(0), { Position = UDim2.new(0.5, 0, 0, 4) }):Play()
                                     end)
 
                                     return frame4
@@ -15761,7 +15761,7 @@ end
                                         conditionFlag29 = not conditionFlag29
                                         frame4.Visible = true
                                         dataTable38.expanded(arrowButton, conditionFlag29)
-                                        TweenService:Create(frame4, TweenInfo.new(0.14), { Size = UDim2.new(1, -4, 0, conditionFlag29 and numericValue34 or 0) }):Play()
+                                        TweenService:Create(frame4, TweenInfo.new(0), { Size = UDim2.new(1, -4, 0, conditionFlag29 and numericValue34 or 0) }):Play()
 
                                         if not conditionFlag29 then
                                             task.delay(0.15, function()
@@ -16033,13 +16033,13 @@ end
                                     for _, temporaryValue93 in ipairs(dataTable46) do
                                         local conditionFlag29 = temporaryValue93.value == amousBgIdx
 
-                                        TweenService:Create(temporaryValue93.stroke, TweenInfo.new(0.15), {
+                                        TweenService:Create(temporaryValue93.stroke, TweenInfo.new(0), {
                                             Color = conditionFlag29 and Color3.fromRGB(240, 240, 255) or Color3.fromRGB(80, 80, 90),
                                             Transparency = conditionFlag29 and 0.05 or 0.48,
                                             Thickness = conditionFlag29 and 2 or 1,
                                         }):Play()
 
-                                        TweenService:Create(temporaryValue93.btn, TweenInfo.new(0.15), {
+                                        TweenService:Create(temporaryValue93.btn, TweenInfo.new(0), {
                                             BackgroundTransparency = temporaryValue93.value == 0 and 0 or conditionFlag29 and 0.05 or 0.25,
                                             ImageTransparency = temporaryValue93.value == 0 and 1 or conditionFlag29 and 0 or 0.22,
                                         }):Play()
@@ -16100,7 +16100,7 @@ end
                                 local function helperFunction73(argumentValue)
                                     local numericValue36 = math.max(0, scrollingFrame.AbsoluteCanvasSize.X - scrollingFrame.AbsoluteWindowSize.X)
                                     local numericValue37 = math.clamp(scrollingFrame.CanvasPosition.X + argumentValue * (numericValue35 + 8) * 3, 0, numericValue36)
-                                    TweenService:Create(scrollingFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CanvasPosition = Vector2.new(numericValue37, 0) }):Play()
+                                    TweenService:Create(scrollingFrame, TweenInfo.new(0), { CanvasPosition = Vector2.new(numericValue37, 0) }):Play()
                                 end
 
                                 createTextButton3("<", true).Activated:Connect(function()
@@ -16387,7 +16387,7 @@ end
                                         local temporaryValue95 = TweenService
                                         local create = temporaryValue95.Create
                                         local stroke = temporaryValue94.stroke
-                                        local tweenInfo = TweenInfo.new(0.15)
+                                        local tweenInfo = TweenInfo.new(0)
                                         local dataTable49 = {}
                                         local color2
 
@@ -16403,7 +16403,7 @@ end
                                         dataTable49.Thickness = conditionFlag29 and 2 or 1
                                         create(temporaryValue95, stroke, tweenInfo, dataTable49):Play()
 
-                                        TweenService:Create(temporaryValue94.btn, TweenInfo.new(0.15), {
+                                        TweenService:Create(temporaryValue94.btn, TweenInfo.new(0), {
                                             BackgroundTransparency = i == 1 and 0 or conditionFlag29 and 0.05 or 0.25,
                                             ImageTransparency = i == 1 and 1 or conditionFlag29 and 0 or 0.22,
                                         }):Play()
@@ -16453,7 +16453,7 @@ end
                                 local function helperFunction75(argumentValue)
                                     local numericValue38 = math.max(0, scrollingFrame2.AbsoluteCanvasSize.X - scrollingFrame2.AbsoluteWindowSize.X)
                                     local numericValue39 = math.clamp(scrollingFrame2.CanvasPosition.X + argumentValue * (numericValue37 + 24) * 3, 0, numericValue38)
-                                    TweenService:Create(scrollingFrame2, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CanvasPosition = Vector2.new(numericValue39, 0) }):Play()
+                                    TweenService:Create(scrollingFrame2, TweenInfo.new(0), { CanvasPosition = Vector2.new(numericValue39, 0) }):Play()
                                 end
 
                                 createTextButton4("<", true).Activated:Connect(function()
@@ -16530,7 +16530,7 @@ end
                                         local conditionFlag29 = k == argumentValue
                                         local color2 = dataTable37.accent.R > 0.98 and dataTable37.accent.G > 0.98 and dataTable37.accent.B > 0.98 and Color3.fromRGB(0, 0, 0) or dataTable37.accent
                                         temporaryValue94.BackgroundColor3 = _G._AmousInvertUI and color2 or Color3.fromRGB(240, 240, 255)
-                                        TweenService:Create(temporaryValue94, TweenInfo.new(0.2), { BackgroundTransparency = conditionFlag29 and 0.78 or 1 }):Play()
+                                        TweenService:Create(temporaryValue94, TweenInfo.new(0), { BackgroundTransparency = conditionFlag29 and 0.78 or 1 }):Play()
                                         temporaryValue94.TextColor3 = _G._AmousInvertUI and Color3.fromRGB(0, 0, 0) or conditionFlag29 and dataTable37.text or dataTable37.muted
                                         local borderGradient = temporaryValue94:FindFirstChild("BorderGradient", true)
 
@@ -16738,13 +16738,13 @@ end
                                         if frame6 then
                                             frame6:SetAttribute("_AmousToggleOn", conditionFlag29)
 
-                                            TweenService:Create(frame6, TweenInfo.new(0.16), {
+                                            TweenService:Create(frame6, TweenInfo.new(0), {
                                                 BackgroundColor3 = _G._AmousInvertUI and (conditionFlag29 and color2 or Color3.fromRGB(220, 175, 225)) or conditionFlag29 and dataTable37.accent or Color3.fromRGB(0, 0, 0),
                                             }):Play()
                                         end
 
                                         if frame7 then
-                                            TweenService:Create(frame7, TweenInfo.new(0.16), {
+                                            TweenService:Create(frame7, TweenInfo.new(0), {
                                                 BackgroundColor3 = _G._AmousInvertUI and Color3.fromRGB(0, 0, 0) or conditionFlag29 and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(238, 238, 245),
                                                 Position = conditionFlag29 and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
                                             }):Play()
@@ -16933,18 +16933,18 @@ end
                                     textLabel2.TextYAlignment = Enum.TextYAlignment.Center
                                     textLabel2.ZIndex = 4
                                     textLabel2.Parent = frame7
-                                    TweenService:Create(frame7, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 0.18 }):Play()
-                                    TweenService:Create(textLabel2, TweenInfo.new(0.2), { TextTransparency = 0 }):Play()
+                                    TweenService:Create(frame7, TweenInfo.new(0), { Position = UDim2.fromOffset(0, 0), BackgroundTransparency = 0.18 }):Play()
+                                    TweenService:Create(textLabel2, TweenInfo.new(0), { TextTransparency = 0 }):Play()
 
                                     task.delay(2.35, function()
                                         if not frame6.Parent then
                                             return
                                         end
-                                        TweenService:Create(frame7, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.fromOffset(numericValue40 + 24, 0), BackgroundTransparency = 1 }):Play()
+                                        TweenService:Create(frame7, TweenInfo.new(0), { Position = UDim2.fromOffset(numericValue40 + 24, 0), BackgroundTransparency = 1 }):Play()
                                         local dataTable51 = { ImageTransparency = 1 }
-                                        TweenService:Create(imageLabel, TweenInfo.new(0.14), dataTable51):Play()
-                                        TweenService:Create(instance6, TweenInfo.new(0.14), { BackgroundTransparency = 1 }):Play()
-                                        TweenService:Create(textLabel2, TweenInfo.new(0.14), { TextTransparency = 1 }):Play()
+                                        TweenService:Create(imageLabel, TweenInfo.new(0), dataTable51):Play()
+                                        TweenService:Create(instance6, TweenInfo.new(0), { BackgroundTransparency = 1 }):Play()
+                                        TweenService:Create(textLabel2, TweenInfo.new(0), { TextTransparency = 1 }):Play()
 
                                         task.delay(0.2, function()
                                             if frame6.Parent then
@@ -18345,7 +18345,7 @@ end
                                         conditionFlag29 = argumentValue6
 
                                         if temporaryValue98 then
-                                            TweenService:Create(temporaryValue98, TweenInfo.new(0.14), { Position = argumentValue6 and UDim2.new(0.5, 0, 0, 4) or UDim2.new(0, 4, 0, 4) }):Play()
+                                            TweenService:Create(temporaryValue98, TweenInfo.new(0), { Position = argumentValue6 and UDim2.new(0.5, 0, 0, 4) or UDim2.new(0, 4, 0, 4) }):Play()
                                         end
 
                                         if not argumentValue7 then
@@ -18991,6 +18991,110 @@ end
                                     end)
                                 end
 
+
+                                _G._AmousOptionDropdown = function(amousFrame, amousValueButton, amousOptions, amousGetIndex, amousOnPick)
+                                    local amousPill = amousValueButton.Parent
+
+                                    for _, amousSibling in ipairs(amousPill:GetChildren()) do
+                                        if amousSibling:IsA("TextButton") and amousSibling ~= amousValueButton then
+                                            amousSibling.Visible = false
+                                        end
+                                    end
+
+                                    amousValueButton.Position = UDim2.new(0, 0, 0, 0)
+                                    amousValueButton.Size = UDim2.new(1, 0, 1, 0)
+
+                                    local amousChevron = Instance.new("TextLabel")
+                                    amousChevron.BackgroundTransparency = 1
+                                    amousChevron.Text = "v"
+                                    amousChevron.Font = Enum.Font.GothamBlack
+                                    amousChevron.TextSize = 12
+                                    amousChevron.TextColor3 = dataTable37.text
+                                    amousChevron.Size = UDim2.new(0, 24, 1, 0)
+                                    amousChevron.Position = UDim2.new(1, -28, 0, 0)
+                                    amousChevron.ZIndex = amousValueButton.ZIndex + 1
+                                    amousChevron.Parent = amousPill
+
+                                    local amousRowHeight, amousGap = 26, 3
+                                    local amousFullHeight = #amousOptions * (amousRowHeight + amousGap) + 4
+                                    local amousListHeight = math.min(amousFullHeight, 5 * (amousRowHeight + amousGap) + 4)
+                                    local amousList = Instance.new("ScrollingFrame")
+                                    amousList.Name = "OptionList"
+                                    amousList.BackgroundColor3 = dataTable37.row
+                                    amousList.BackgroundTransparency = 0.3
+                                    amousList.BorderSizePixel = 0
+                                    amousList.ScrollBarThickness = 2
+                                    amousList.CanvasSize = UDim2.new(0, 0, 0, amousFullHeight)
+                                    amousList.Position = UDim2.new(0, 0, 0, 54)
+                                    amousList.Size = UDim2.new(1, 0, 0, amousListHeight)
+                                    amousList.ClipsDescendants = true
+                                    amousList.Visible = false
+                                    amousList.ZIndex = 30
+                                    amousList.Parent = amousFrame
+                                    amousCleanAddCorner(amousList, 6)
+
+                                    local amousLayout = Instance.new("UIListLayout")
+                                    amousLayout.Padding = UDim.new(0, amousGap)
+                                    amousLayout.SortOrder = Enum.SortOrder.LayoutOrder
+                                    amousLayout.Parent = amousList
+                                    local amousPadding = Instance.new("UIPadding")
+                                    amousPadding.PaddingTop = UDim.new(0, 2)
+                                    amousPadding.PaddingLeft = UDim.new(0, 3)
+                                    amousPadding.PaddingRight = UDim.new(0, 3)
+                                    amousPadding.Parent = amousList
+
+                                    local amousButtons = {}
+                                    local amousOpen = false
+
+                                    local function amousRefresh()
+                                        local amousCurrent = amousGetIndex()
+
+                                        for i, amousButton in ipairs(amousButtons) do
+                                            local amousSelected = i == amousCurrent
+                                            amousButton.BackgroundColor3 = amousSelected and Color3.fromRGB(196, 200, 208) or dataTable37.key
+                                            amousButton.TextColor3 = amousSelected and Color3.fromRGB(0, 0, 0) or dataTable37.text
+                                        end
+                                    end
+
+                                    local function amousSetOpen(amousValue)
+                                        amousOpen = amousValue
+                                        amousList.Visible = amousOpen
+                                        amousFrame.Size = UDim2.new(1, -4, 0, amousOpen and (54 + amousListHeight + 6) or 52)
+                                        amousChevron.Text = amousOpen and "^" or "v"
+
+                                        if amousOpen then
+                                            amousRefresh()
+                                        end
+                                    end
+
+                                    for i, amousName in ipairs(amousOptions) do
+                                        local amousButton = Instance.new("TextButton")
+                                        amousButton.LayoutOrder = i
+                                        amousButton.BackgroundColor3 = dataTable37.key
+                                        amousButton.BackgroundTransparency = 0.2
+                                        amousButton.BorderSizePixel = 0
+                                        amousButton.Text = string.upper(tostring(amousName))
+                                        amousButton.TextColor3 = dataTable37.text
+                                        amousButton.TextSize = 12
+                                        amousButton.Font = Enum.Font.GothamBold
+                                        amousButton.AutoButtonColor = false
+                                        amousButton.Size = UDim2.new(1, 0, 0, amousRowHeight)
+                                        amousButton.ZIndex = 31
+                                        amousButton.Parent = amousList
+                                        amousCleanAddCorner(amousButton, 5)
+                                        amousButtons[i] = amousButton
+
+                                        amousButton.Activated:Connect(function()
+                                            amousOnPick(i)
+                                            amousSetOpen(false)
+                                        end)
+                                    end
+
+                                    amousValueButton.Activated:Connect(function()
+                                        amousSetOpen(not amousOpen)
+                                    end)
+                                end
+
                                 local customSky = Utility and Utility:FindFirstChild("Custom Sky")
 
                                 if customSky then
@@ -19060,6 +19164,15 @@ end
                                     if dataTable50.next then
                                         dataTable50.next.Activated:Connect(function()
                                             numericValue40 = numericValue40 % #amousSkyOrder + 1
+                                            helperFunction84()
+                                        end)
+                                    end
+
+                                    if _G._AmousOptionDropdown and temporaryValue95 then
+                                        _G._AmousOptionDropdown(customSky, temporaryValue95, amousSkyOrder, function()
+                                            return numericValue40
+                                        end, function(amousPickedIndex)
+                                            numericValue40 = amousPickedIndex
                                             helperFunction84()
                                         end)
                                     end
@@ -19620,7 +19733,7 @@ end
                                         end
                                     end
 
-                                    if _G._AmousLoadedOnNeonWhiteTools then
+                                    if false then
                                         if _G._AmousNeonWhiteTools and _G._AmousNeonWhiteTools.SetEnabled then
                                             _G._AmousNeonWhiteTools.SetEnabled(true)
                                         end
@@ -20295,13 +20408,20 @@ end
                                             local amousUtilityPage = amousContent and amousContent:FindFirstChild("Utility")
 
                                             if amousUtilityPage then
-                                                for _, amousSkinRowName in ipairs({ "Section_*** Skin", "*** Skin", "Skin Gallery" }) do
+                                                for _, amousSkinRowName in ipairs({ "Section_*** Skin", "*** Skin", "Skin Gallery", "Font", "Neon White Tools" }) do
                                                     local amousSkinRow = amousUtilityPage:FindFirstChild(amousSkinRowName)
 
                                                     if amousSkinRow then
                                                         amousSkinRow:Destroy()
                                                     end
                                                 end
+                                            end
+
+                                            local amousCombatPage = amousContent and amousContent:FindFirstChild("Combat")
+                                            local amousPauseRow = amousCombatPage and amousCombatPage:FindFirstChild("Normal Pause %")
+
+                                            if amousPauseRow then
+                                                amousPauseRow:Destroy()
                                             end
 
                                             local amousSkinGalleryGui = screenGui and screenGui:FindFirstChild("AmousSkinGallery")
@@ -20412,7 +20532,7 @@ end
                                             local temporaryValue109 = 1.3
                                             stealSettings.StealRadius = 60
                                             temporaryValue107.StealDuration = temporaryValue109
-                                            temporaryValue108.NormalStealPausePercent = 75
+                                            temporaryValue108.NormalStealPausePercent = 85
                                             local cfg = stealSystem.CFG
                                             stealSystem.CFG.STEAL_RANGE = 8.7
                                             cfg.PRIME_RANGE = 80
@@ -21420,6 +21540,15 @@ end
                                     if animPackNext then
                                         animPackNext.Activated:Connect(function()
                                             numericValue35 = numericValue35 % #dataTable46 + 1
+                                            helperFunction73()
+                                        end)
+                                    end
+
+                                    if _G._AmousOptionDropdown and animPackValue then
+                                        _G._AmousOptionDropdown(animPack, animPackValue, dataTable46, function()
+                                            return numericValue35
+                                        end, function(amousPickedIndex)
+                                            numericValue35 = amousPickedIndex
                                             helperFunction73()
                                         end)
                                     end
