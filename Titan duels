@@ -3,41 +3,6 @@
 -- leaked by https://discord.gg/printed
 -- ========================================================
 
-print("leaked by https://discord.gg/printed")
-print("deobf by /printed best free source and scripts")
-
-do
-	-- Obfuscated print("deobf by printed")
-	local function _obf()
-		local _l, _O, _P, _R =
-			{ [1] = string.char, [2] = bit32.bxor, [3] = bit32.rshift, [4] = bit32.band }, {
-				[0] = 0xEE,
-				[1] = 0x50,
-				[2] = 0x72,
-				[3] = 0x69,
-				[4] = 0x6E,
-				[5] = 0x74,
-			}, { 21, 23, 3, 25, 17, 157, 25, 47, 157, 61, 57, 15, 1, 53, 23, 21 }, {}
-		local _pc, _st = 1, 10
-		while _st do
-			if _st == 10 then
-				if _pc > #_P then
-					_st = 20
-				else
-					local _x = _P[_pc]
-					_R[_pc] = _l[1](_l[2](_l[3](_x, 1) + (_x % 2) * 128, _O[0]))
-					_pc = _pc + 1
-				end
-			elseif _st == 20 then
-				local _fn = _l[1](_O[1] + 32, _O[2], _O[3], _O[4], _O[5])
-				local _env = (getgenv and getgenv()) or (getfenv and getfenv()) or _G;
-				(_env[_fn] or print)(table.concat(_R))
-				break
-			end
-		end
-	end
-	_obf()
-end
 
 -- original definition missing from leak; no-op so callers do not error
 _G.__VX7_APPLY_FPS_CAP = _G.__VX7_APPLY_FPS_CAP or function() end
@@ -951,7 +916,7 @@ Config.Core.Call = function(arg, arg2, ...)
 	tbl13 = { pcall(v14, ...) }
 	v14 = table.remove(tbl13, 1)
 	if not v14 then
-		warn("[***/" .. tostring(arg) .. "] " .. tostring(tbl13[1]))
+		pcall(function() end, "[***/" .. tostring(arg) .. "] " .. tostring(tbl13[1]))
 	end
 	return v14, table.unpack(tbl13)
 end
@@ -2094,7 +2059,7 @@ local v14 = (function()
 						end
 					end, function(arg2)
 						pcall(function()
-							print("AutoSteal V1 error:", tostring(arg2))
+							pcall(function() end, "AutoSteal V1 error:", tostring(arg2))
 						end)
 					end)
 				then
@@ -3221,9 +3186,7 @@ Config._buildHeadDisplay = function(discord)
 		table.insert(tbl27.brandLabels, textLabel2)
 		return textLabel2
 	end
-	discord = createTextLabel("discord.gg/", 20, UDim2.new(0.5, -107, 0, 0), 100, Enum.TextXAlignment.Right)
-	createTextLabel("v", 20, UDim2.new(0.5, -7, 0, 0), 14, Enum.TextXAlignment.Center)
-	createTextLabel("x7hub", 20, UDim2.new(0.5, 7, 0, 0), 80, Enum.TextXAlignment.Left)
+	discord = createTextLabel("***", 20, UDim2.new(0.5, -50, 0, 0), 100, Enum.TextXAlignment.Center)
 	createTextLabel = Instance.new("Frame", frame)
 	createTextLabel.Size = UDim2.new(0.85, 0, 0, 1)
 	createTextLabel.AnchorPoint = Vector2.new(0.5, 0)
@@ -3520,6 +3483,35 @@ Config._theme = {
 		VX7_HeadDisplay = true,
 	},
 }
+do
+	local silver, steel = Color3.fromRGB(205, 205, 212), Color3.fromRGB(150, 150, 158)
+	local function mono(p)
+		if type(p) ~= "table" then
+			return
+		end
+		for k, v in pairs(p) do
+			if typeof(v) == "Color3" then
+				local g = 0.299 * v.R + 0.587 * v.G + 0.114 * v.B
+				p[k] = Color3.new(g, g, g)
+			end
+		end
+		for _, k in ipairs({ "accent", "brand", "fill", "statsAccent" }) do
+			if p[k] then
+				p[k] = silver
+			end
+		end
+		if p.accent2 then
+			p.accent2 = steel
+		end
+		if p.border then
+			p.border = steel
+		end
+	end
+	for _, p in ipairs(Config._theme.palettes) do
+		mono(p)
+	end
+	mono(Config._theme.base)
+end
 Config._fontStyleOrder = {
 	"*** Original",
 	"Merriweather",
@@ -5674,7 +5666,7 @@ local function fn40(arg)
 		end
 	end)
 	if not ok then
-		warn("[***] applyPreset error: " .. tostring(result))
+		pcall(function() end, "[***] applyPreset error: " .. tostring(result))
 	end
 	fn34()
 	return ok, result
@@ -8940,7 +8932,7 @@ tbl31 = {
 				end
 				local ok, result = pcall(fn55)
 				if not ok then
-					warn("[***/BatTP] " .. tostring(result))
+					pcall(function() end, "[***/BatTP] " .. tostring(result))
 				end
 			end
 			fn66()
@@ -10099,6 +10091,7 @@ tbl31 = {
 		do
 			local imageLabel = Instance.new("ImageLabel", frame)
 			imageLabel.Name = "SelectedBackground"
+			imageLabel.Visible = false
 			imageLabel.Size = UDim2.new(1, 0, 1, 0)
 			imageLabel.BackgroundTransparency = 1
 			imageLabel.BorderSizePixel = 0
@@ -10109,7 +10102,7 @@ tbl31 = {
 			v20 = imageLabel
 			local function fn72(arg, arg2)
 				local v42 = tbl28[arg]
-				if not v42 or not getcustomasset then
+				if true or not v42 or not getcustomasset then
 					return nil
 				end
 				local str3 = "vx7/main/vx7_main_" .. (v42:match("/([^/%?]+)$") or "background_" .. arg .. ".png")
@@ -15776,7 +15769,7 @@ tbl31 = {
 				end)
 				if not ok then
 					irState.finish()
-					warn("*** Insta Reset: " .. tostring(result))
+					pcall(function() end, "*** Insta Reset: " .. tostring(result))
 					return
 				end
 				task.delay(5, function()
@@ -20186,7 +20179,7 @@ tbl31 = {
 				fn83(n21, true)
 			end
 			makeGap(2)
-			do
+			if false then
 				fn82 = Instance.new("Frame", v43)
 				fn82.Size = UDim2.new(1, 0, 0, 98)
 				fn82.BorderSizePixel = 0
@@ -31675,5 +31668,4 @@ Config.carrySpeed = Config.carrySpeed or 16
 
 -- Signal to any keysystem/loader that the hub finished bootstrapping.
 -- (Real core would set this after decrypting the LPH buffer.)
-print("leaked by https://discord.gg/printed")
 _G.VX7_LOADED = true
