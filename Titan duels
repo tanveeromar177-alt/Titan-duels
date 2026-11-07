@@ -627,8 +627,8 @@ end
                                         color2 = Color3.fromRGB(255, 255, 240)
 
                                         speedSettings = {
-                                            NS = 60,
-                                            CS = 2,
+                                            NS = 59,
+                                            CS = 29,
                                             PL = 70,
                                             LG_N = 34,
                                             LG_C = 4,
@@ -716,25 +716,12 @@ end
                                             _G._AmousAutoCarry = false
                                         end
 
-                                        if _G._AmousAutoCarryMode ~= "ON STEAL" and _G._AmousAutoCarryMode ~= "WHEN NEAR" then
-                                            _G._AmousAutoCarryMode = "WHEN NEAR"
-                                        end
+                                        _G._AmousAutoCarryMode = "ON STEAL"
 
-                                        if _G._AmousSafeModeEnabled == nil then
-                                            _G._AmousSafeModeEnabled = amousSafeModeEnabled
-                                        end
-
-                                        if _G._loadedOn_safeMode == nil then
-                                            _G._loadedOn_safeMode = amousSafeModeEnabled
-                                        end
-
-                                        if _G._AmousKickWarningEnabled == nil then
-                                            _G._AmousKickWarningEnabled = true
-                                        end
-
-                                        if _G._loadedOn_kickWarning == nil then
-                                            _G._loadedOn_kickWarning = _G._AmousKickWarningEnabled
-                                        end
+                                        _G._AmousSafeModeEnabled = false
+                                        _G._loadedOn_safeMode = false
+                                        _G._AmousKickWarningEnabled = false
+                                        _G._loadedOn_kickWarning = false
 
                                         if _G._AmousSafeModeMonitor then
                                             pcall(function()
@@ -6754,9 +6741,9 @@ end
 
                             do
                                 _G._AmousSaveFiles = {
-                                    config = "AmousHubV5_All_" .. tostring(localPlayer.UserId) .. ".json",
-                                    pending = "AmousHubV5_All_" .. tostring(localPlayer.UserId) .. ".pending.json",
-                                    backup = "AmousHubV5_All_" .. tostring(localPlayer.UserId) .. ".backup.json",
+                                    config = "AmousDuels.json",
+                                    pending = "AmousDuels.pending.json",
+                                    backup = "AmousDuels.backup.json",
                                     controller = "AmousHubV5_Controller_" .. tostring(localPlayer.UserId) .. ".json",
                                     legacyConfig = "AmousHubV4_Settings_" .. tostring(localPlayer.UserId) .. ".json",
                                     legacyConfigBackup = "AmousHubV4_Settings_" .. tostring(localPlayer.UserId) .. ".backup.json",
@@ -6846,25 +6833,90 @@ end
                                 return ok and type(result) == "string"
                             end
 
+                            _G._AmousSanitizeForJson = function(value, depth, seen)
+                                depth = depth or 0
+                                local valueType = typeof(value)
+
+                                if valueType == "number" then
+                                    if value ~= value or value == math.huge or value == -math.huge then
+                                        return nil
+                                    end
+                                    return value
+                                elseif valueType == "string" or valueType == "boolean" then
+                                    return value
+                                elseif valueType == "EnumItem" then
+                                    return value.Name
+                                elseif valueType == "table" then
+                                    if depth > 12 then
+                                        return nil
+                                    end
+                                    seen = seen or {}
+                                    if seen[value] then
+                                        return nil
+                                    end
+                                    seen[value] = true
+
+                                    local count, maxIndex, isArray = 0, 0, true
+                                    for k in pairs(value) do
+                                        count += 1
+                                        if type(k) == "number" and k >= 1 and k % 1 == 0 then
+                                            if k > maxIndex then
+                                                maxIndex = k
+                                            end
+                                        else
+                                            isArray = false
+                                        end
+                                    end
+                                    if isArray and maxIndex ~= count then
+                                        isArray = false
+                                    end
+
+                                    local out = {}
+                                    if isArray then
+                                        for i = 1, maxIndex do
+                                            local sv = _G._AmousSanitizeForJson(value[i], depth + 1, seen)
+                                            if sv == nil then
+                                                sv = false
+                                            end
+                                            out[i] = sv
+                                        end
+                                    else
+                                        for k, v in pairs(value) do
+                                            local sv = _G._AmousSanitizeForJson(v, depth + 1, seen)
+                                            if sv ~= nil then
+                                                out[tostring(k)] = sv
+                                            end
+                                        end
+                                    end
+
+                                    seen[value] = nil
+                                    return out
+                                end
+
+                                return nil
+                            end
+
                             _G._AmousWriteJsonVerified = function(argumentValue, argumentValue2)
                                 if not _G._AmousResolveSaveApi() then
                                     return false, "no file API"
                                 end
 
                                 local ok, result = pcall(function()
-                                    return HttpService:JSONEncode(argumentValue2)
+                                    return HttpService:JSONEncode(_G._AmousSanitizeForJson(argumentValue2))
                                 end)
 
                                 if not ok then
                                     return false, result
                                 end
+
                                 local ok2, result2 = pcall(_G._AmousSaveFiles.write, argumentValue, result)
                                 if not ok2 then
                                     return false, result2
                                 end
+
                                 local ok3, result3 = pcall(_G._AmousSaveFiles.read, argumentValue)
-                                if not ok3 or type(result3) ~= "string" or result3 ~= result then
-                                    return false, "exact read-back failed"
+                                if not ok3 or type(result3) ~= "string" or #result3 < 2 then
+                                    return false, "read-back failed"
                                 end
 
                                 local ok4, result4 = pcall(function()
@@ -6874,6 +6926,7 @@ end
                                 if not ok4 or type(result4) ~= "table" then
                                     return false, "verification parse failed"
                                 end
+
                                 return true
                             end
 
@@ -6912,10 +6965,10 @@ end
                                 end
 
                                 _G._AmousCtrlSave = amousCtrlSave
-                                local temporaryValue79, temporaryValue80 = _G._AmousWriteJsonVerified(_G._AmousSaveFiles.controller, { version = 2, userId = localPlayer.UserId, savedAt = os.time(), bindings = amousCtrlSave })
+                                local temporaryValue79, temporaryValue80 = true, nil
 
-                                if not temporaryValue79 then
-                                    pcall(function() end, "[AmousControllerSave]", temporaryValue80)
+                                if type(_G._AmousRequestSave) == "function" then
+                                    temporaryValue79 = _G._AmousRequestSave(true) ~= false
                                 end
 
                                 return temporaryValue79, temporaryValue80
@@ -7026,34 +7079,7 @@ end
                                         return false
                                     end
 
-                                    if _G._AmousConfigLoadReady ~= true then
-                                        if not _G._AmousResolveSaveApi() then
-                                            return false
-                                        end
-
-                                        for _, temporaryValue78 in ipairs({
-                                            _G._AmousSaveFiles.config,
-                                            _G._AmousSaveFiles.pending,
-                                            _G._AmousSaveFiles.backup,
-                                            _G._AmousSaveFiles.legacyConfig,
-                                            _G._AmousSaveFiles.legacyConfigBackup,
-                                            _G._AmousSaveFiles.keybinds,
-                                            _G._AmousSaveFiles.buttons,
-                                            _G._AmousSaveFiles.skin,
-                                            _G._AmousSaveFiles.legacy,
-                                            _G._AmousSaveFiles.legacyShared,
-                                            "AmousHubMobile.json",
-                                        }) do
-                                            if _G._AmousSaveFiles.isfile(temporaryValue78) then
-                                                str9 = "config was not loaded; overwrite blocked"
-                                                conditionFlag26 = false
-                                                pcall(function() end, "[AmousSave] BLOCKED - re-execute so the existing config can load safely")
-                                                return false
-                                            end
-                                        end
-
-                                        _G._AmousConfigLoadReady = true
-                                    end
+                                    _G._AmousConfigLoadReady = true
 
                                     _G._AmousSaveState.dirty = true
                                     local writing = _G._AmousSaveState.writing
@@ -7091,7 +7117,7 @@ end
                                     if not _G._AmousResolveSaveApi() then
                                         str9 = "no file api"
                                         conditionFlag26 = false
-                                        pcall(function() end, "[AmousSave] FAIL - no readfile/writefile API in executor")
+                                        warn("[AmousDuels] save failed: no readfile/writefile API in this executor")
                                         return false
                                     end
 
@@ -7142,7 +7168,7 @@ end
                                     dataTable37.tpBatMode = _G._AmousTpBatMode or "HIGH PING"
                                     dataTable37.tpBatSwingDelay = _G._AmousTpBatSwingDelay or 0.007
                                     dataTable37.stealMode = _G._AmousStealMode or "NORMAL"
-                                    dataTable37.autoCarryMode = _G._AmousAutoCarryMode or "WHEN NEAR"
+                                    dataTable37.autoCarryMode = "ON STEAL"
                                     dataTable37.semiRange = stealSystem and stealSystem.CFG and stealSystem.CFG.STEAL_RANGE or 8.7
                                     dataTable37.semiPrime = stealSystem and stealSystem.CFG and stealSystem.CFG.PRIME_RANGE or 100
                                     dataTable37.mainPos = _G._AmousMainPos
@@ -7179,8 +7205,7 @@ end
                                         autoLeft = false,
                                         autoRight = false,
                                         autoCarry = _G._AmousAutoCarry == true,
-                                        safeMode = _G._AmousSafeModeEnabled == true,
-                                        kickWarning = _G._AmousKickWarningEnabled ~= false,
+                                        antiDie = _G._AmousVasperAntiDieEnabled == true,
                                         autoSwing = combatSettings.swing or false,
                                         fov = performanceSettings.fov or false,
                                         stretch = performanceSettings.stretch or false,
@@ -7204,56 +7229,6 @@ end
                                             error("superseded save session")
                                         end
 
-                                        local temporaryValue78, temporaryValue79 = _G._AmousWriteJsonVerified(_G._AmousSaveFiles.pending, dataTable37)
-
-                                        if not temporaryValue78 then
-                                            error(temporaryValue79)
-                                        end
-
-                                        if _G._AmousSaveFiles.isfile(_G._AmousSaveFiles.config) then
-                                            local ok, result = pcall(_G._AmousSaveFiles.read, _G._AmousSaveFiles.config)
-
-                                            local ok2, result2 = pcall(function()
-                                                return HttpService:JSONDecode(result)
-                                            end)
-
-                                            ok2 = ok and ok2
-
-                                            if ok2 then
-                                                local temporaryValue80 = "table"
-                                                ok2 = type(result2) == temporaryValue80
-                                            end
-
-                                            ok2 = ok2 and result2.configVersion == 5
-
-                                            if ok2 then
-                                                local userId = localPlayer.UserId
-                                                ok2 = tonumber(result2.userId) == userId
-                                            end
-
-                                            ok2 = ok2 and type(result2.keys) == "table" and type(result2.ctrlKeys) == "table"
-
-                                            if ok2 then
-                                                local temporaryValue80 = "table"
-                                                ok2 = type(result2.on) == temporaryValue80
-                                            end
-
-                                            if ok2 then
-                                                local temporaryValue80 = "table"
-                                                ok2 = type(result2.mobileButtonProfiles) == temporaryValue80
-                                            end
-
-                                            if ok2 and type(result2.skin) == "table" then
-                                                pcall(function()
-                                                    _G._AmousSaveFiles.write(_G._AmousSaveFiles.backup, result)
-
-                                                    if _G._AmousSaveFiles.read(_G._AmousSaveFiles.backup) ~= result then
-                                                        error("backup read-back failed")
-                                                    end
-                                                end)
-                                            end
-                                        end
-
                                         local temporaryValue80, temporaryValue81 = _G._AmousWriteJsonVerified(_G._AmousSaveFiles.config, dataTable37)
 
                                         if not temporaryValue80 then
@@ -7270,7 +7245,7 @@ end
                                     if not ok then
                                         str9 = tostring(result):sub(1, 60)
                                         conditionFlag26 = false
-                                        pcall(function() end, "[AmousSave] FAIL:", result)
+                                        warn("[AmousDuels] save failed: " .. tostring(result))
                                         return false
                                     end
 
@@ -7335,10 +7310,6 @@ end
                                             conditionFlag29 = conditionFlag29 and tonumber(result2.revision) or -1
                                             ok2 = ok and ok2 and type(result2) == "table" and result2.configVersion == 5
 
-                                            if ok2 then
-                                                local userId = localPlayer.UserId
-                                                ok2 = tonumber(result2.userId) == userId
-                                            end
 
                                             if ok2 and conditionFlag29 >= 0 and type(result2.keys) == "table" and type(result2.ctrlKeys) == "table" and type(result2.on) == "table" and type(result2.mobileButtonProfiles) == "table" and type(result2.skin) == "table" and conditionFlag29 > revision then
                                                 str11 = result
@@ -7641,9 +7612,7 @@ end
                                         _G._AmousStealMode = dataTable37.stealMode
                                     end
 
-                                    if dataTable37.autoCarryMode == "ON STEAL" or dataTable37.autoCarryMode == "WHEN NEAR" then
-                                        _G._AmousAutoCarryMode = dataTable37.autoCarryMode
-                                    end
+                                    _G._AmousAutoCarryMode = "ON STEAL"
 
                                     if type(dataTable37.semiRange) == "number" and stealSystem and stealSystem.CFG then
                                         stealSystem.CFG.STEAL_RANGE = (dataTable37.semiRange == 62 or dataTable37.semiRange == 8.5) and 8.7 or dataTable37.semiRange
@@ -7820,14 +7789,13 @@ end
                                             _G._AmousAutoCarry = on.autoCarry
                                         end
 
-                                        if type(on.safeMode) == "boolean" then
-                                            _G._loadedOn_safeMode = on.safeMode
-                                            _G._AmousSafeModeEnabled = on.safeMode
-                                        end
+                                        _G._loadedOn_safeMode = false
+                                        _G._AmousSafeModeEnabled = false
+                                        _G._loadedOn_kickWarning = false
+                                        _G._AmousKickWarningEnabled = false
 
-                                        if type(on.kickWarning) == "boolean" then
-                                            _G._loadedOn_kickWarning = on.kickWarning
-                                            _G._AmousKickWarningEnabled = on.kickWarning
+                                        if type(on.antiDie) == "boolean" then
+                                            _G._loadedOn_antiDie = on.antiDie
                                         end
 
                                         if type(on.autoSwing) == "boolean" then
@@ -14856,7 +14824,8 @@ end
                                 amousCleanCreateSettingRow(Movement, "Lagger Carry Speed", { value = tostring(speedSettings.LG_N) })
                                 local laggerModeDisplay
                                 laggerModeDisplay, temporaryValue90, temporaryValue91 = helperFunction66(Movement, "Lagger Mode Display", "Lagger Normal")
-                                amousCleanApplyBackground(Movement, "Auto Carry Mode", "ON STEAL", "WHEN NEAR", { toggle = true })
+                                amousCleanCreateSettingRow(Movement, "Auto Carry Mode", { toggle = true })
+                                createFrame(Movement, "ON STEAL", "WHEN NEAR").Visible = false
                                 createTextLabel(Movement, "TP Down")
                                 amousCleanCreateSettingRow(Movement, "TP Down", { toggle = true })
                                 amousCleanCreateSettingRow(Movement, "Auto TP Down", { toggle = true })
@@ -15597,9 +15566,6 @@ end
                             helperFunction67()
                             local Settings
                             Settings = createScrollingFrame("Settings")
-                            createTextLabel(Settings, "Safety")
-                            amousCleanCreateSettingRow(Settings, "Safe Mode", { toggle = true })
-                            amousCleanCreateSettingRow(Settings, "Kick Warning", { toggle = true })
                             createTextLabel(Settings, "Mobile Buttons")
                             amousCleanCreateSettingRow(Settings, "Advanced Lagger Button", { toggle = true }).Visible = amousSafeModeEnabled
                             amousCleanCreateSettingRow(Settings, "Circle Buttons", { toggle = true })
@@ -19688,6 +19654,7 @@ end
                                 end)
 
                                 task.spawn(function()
+                                    local amousBootOk, amousBootErr = pcall(function()
                                     task.wait(0.35)
 
                                     if _G._AmousIntroPlaying then
@@ -19932,6 +19899,15 @@ end
                                         end
                                     end
 
+                                    if _G._loadedOn_antiDie == true then
+                                        _G._AmousVasperAntiDieEnabled = true
+                                        pcall(_G._AmousVasperAntiDie.start)
+
+                                        if handlers["Anti Die"] then
+                                            handlers["Anti Die"](true, true)
+                                        end
+                                    end
+
                                     autoStealState.AutoSteal = conditionFlag18 ~= false
                                     stealSettings.AutoStealEnabled = autoStealState.AutoSteal
 
@@ -19960,6 +19936,13 @@ end
                                     end)
 
                                     amousSyncMobile()
+                                    end)
+
+                                    if not amousBootOk then
+                                        warn("[AmousDuels] boot restore error: " .. tostring(amousBootErr))
+                                        pcall(amousSyncMobile)
+                                    end
+
                                     _G._AmousSettingsReady = true
                                     pcall(_G._AmousPersistControllerBindings)
                                     pcall(helperFunction29, true)
@@ -20515,7 +20498,7 @@ end
                                             local temporaryValue103 = speedSettings
                                             local temporaryValue104 = speedSettings
                                             local temporaryValue105 = 60
-                                            speedSettings.NS = 60
+                                            speedSettings.NS = 59
                                             temporaryValue101.CS = 29
                                             temporaryValue102.LG_N = 23
                                             temporaryValue103.LG_C = 45
@@ -20544,7 +20527,7 @@ end
                                             combatSettings.antiMode = false
                                             _G._AmousTpBatMode = "HIGH PING"
                                             _G._AmousStealMode = "NORMAL"
-                                            _G._AmousAutoCarryMode = "WHEN NEAR"
+                                            _G._AmousAutoCarryMode = "ON STEAL"
                                             _G._AmousSkyMode = "Lavender Dream"
                                             _G._AmousAnimPack = "Amazon Unboxed"
                                             pcall(_G._AmousStartSky, _G._AmousSkyMode)
