@@ -652,7 +652,7 @@ end
                                             tpMirror = false,
                                         }
 
-                                        _G._AmousTpBatSwingDelay = math.clamp(tonumber(_G._AmousTpBatSwingDelay) or 0.007, 0.001, 1)
+                                        _G._AmousTpBatSwingDelay = 0.007
                                         _G._AmousTpBatDistance = math.clamp(tonumber(_G._AmousTpBatDistance) or 8, 0.5, 24)
 
                                         if _G._AmousTpBatCameraSteering == nil then
@@ -861,14 +861,8 @@ end
                                     end
 
                                     _G._AmousStealBarBackgroundAssets = {
-                                        "rbxassetid://90631990302263",
-                                        "rbxassetid://109619268613730",
-                                        "rbxassetid://90453834580322",
-                                        "rbxassetid://82173577293417",
-                                        "rbxassetid://88369503310562",
-                                        "rbxassetid://80708025126373",
-                                        "rbxassetid://111949903851987",
-                                        "rbxassetid://135181794444219",
+                                        "rbxassetid://105768583494591",
+                                        "rbxassetid://117811266463116",
                                     }
 
                                     uiScale = nil
@@ -5923,7 +5917,7 @@ end
                                 end
                             end
 
-                            _G._AmousSkyMode = _G._AmousSkyMode or "Lavender Dream"
+                            _G._AmousSkyMode = _G._AmousSkyMode or "Off"
 
                             _G._AmousClearSky = _G._AmousClearSky or function()
                                 local temporaryValue78 = ipairs
@@ -7147,11 +7141,12 @@ end
                                     dataTable37.laggerKey = laggerState.key and typeof(laggerState.key) == "EnumItem" and laggerState.key.Name or nil
                                     dataTable37.lagPackets = laggerState.packets
                                     dataTable37.lagDelay = laggerState.delay
-                                    dataTable37.skyMode = _G._AmousSkyMode or "Lavender Dream"
-                                    dataTable37.animPack = _G._AmousAnimPack or "Amazon Unboxed"
+                                    dataTable37.skyMode = _G._AmousSkyMode or "Off"
+                                    dataTable37.animPack = _G._AmousAnimPack or "Off"
+                                    dataTable37.skyAnimSaved = true
                                     dataTable37.keys = _G._AmousKbSave or {}
                                     dataTable37.ctrlKeys = _G._AmousCtrlSave or {}
-                                    dataTable37.bgIdx = _G._AmousBgIdx ~= nil and _G._AmousBgIdx or 0
+                                    dataTable37.bgIdx = _G._AmousBgIdx ~= nil and _G._AmousBgIdx or 1
                                     dataTable37.bgOrder = 2
                                     dataTable37.btnImgIdx = _G._AmousBtnImgIdx or 1
                                     dataTable37.themeIdx = _G._AmousThemeIdx or 7
@@ -7166,7 +7161,7 @@ end
                                     dataTable37.jumpPower = 55
                                     dataTable37.batMode = _G._AmousBatMode or "DEFAULT"
                                     dataTable37.tpBatMode = _G._AmousTpBatMode or "HIGH PING"
-                                    dataTable37.tpBatSwingDelay = _G._AmousTpBatSwingDelay or 0.007
+                                    dataTable37.tpBatSwingDelay = 0.007
                                     dataTable37.stealMode = _G._AmousStealMode or "NORMAL"
                                     dataTable37.autoCarryMode = "ON STEAL"
                                     dataTable37.semiRange = stealSystem and stealSystem.CFG and stealSystem.CFG.STEAL_RANGE or 8.7
@@ -7212,7 +7207,7 @@ end
                                         antiLag = performanceSettings.antilag or false,
                                         potatoGraphics = _G._AmousPotatoGraphics == true,
                                         infJump = conditionFlag14 or false,
-                                        tryHard = _G._AmousTryHard and _G._AmousTryHard.enabled or false,
+                                        tryHard = false,
                                         antiBat = _G._AmousAntiBat and _G._AmousAntiBat.enabled or false,
                                         batCounter = _G._VezyBatCounterOn or false,
                                         batCounterMode = _G._AmousOshaBatCounter and _G._AmousOshaBatCounter.mode or _G._AmousBatCounterMode or "V1",
@@ -7474,12 +7469,15 @@ end
                                         laggerState.delay = math.clamp(dataTable37.lagDelay, 0.05, 5)
                                     end
 
-                                    if type(dataTable37.skyMode) == "string" then
-                                        _G._AmousSkyMode = dataTable37.skyMode
-                                    end
+                                    -- v7: only trust sky/anim from configs written by this version (old configs carried the old forced defaults)
+                                    if dataTable37.skyAnimSaved == true then
+                                        if type(dataTable37.skyMode) == "string" and _G._AmousSkyPresets and _G._AmousSkyPresets[dataTable37.skyMode] then
+                                            _G._AmousSkyMode = dataTable37.skyMode
+                                        end
 
-                                    if type(dataTable37.animPack) == "string" then
-                                        _G._AmousAnimPack = dataTable37.animPack
+                                        if type(dataTable37.animPack) == "string" then
+                                            _G._AmousAnimPack = dataTable37.animPack
+                                        end
                                     end
 
                                     local temporaryValue82 = dataTable37
@@ -7604,9 +7602,7 @@ end
 
                                     local temporaryValue84 = "number"
 
-                                    if type(dataTable37.tpBatSwingDelay) == temporaryValue84 then
-                                        _G._AmousTpBatSwingDelay = math.clamp(dataTable37.tpBatSwingDelay, 0.001, 1)
-                                    end
+                                    _G._AmousTpBatSwingDelay = 0.007
 
                                     if dataTable37.stealMode == "NORMAL" or dataTable37.stealMode == "SEMI" then
                                         _G._AmousStealMode = dataTable37.stealMode
@@ -14864,7 +14860,6 @@ end
                                         end
                                     end
                                 end
-                                amousCleanCreateSettingRow(Combat, "TP Swing Delay", { value = string.format("%.3f", _G._AmousTpBatSwingDelay) })
                                 createTextLabel(Combat, "Auto Path")
                                 amousCleanCreateSettingRow(Combat, "Auto Left", { toggle = true })
                                 amousCleanCreateSettingRow(Combat, "Auto Right", { toggle = true })
@@ -15162,7 +15157,6 @@ end
                             end
 
                             helperFunction66(Utility)
-                            amousCleanCreateSettingRow(Utility, "Try Hard Animation", { toggle = true })
                             createTextLabel(Utility, "Performance")
                             amousCleanCreateSettingRow(Utility, "Stretch Res", { toggle = true })
                             amousCleanCreateSettingRow(Utility, "Anti-Lag", { toggle = true })
@@ -15779,20 +15773,14 @@ end
                             local dataTable44
 
                             dataTable44 = {
-                                "rbxassetid://90631990302263",
-                                "rbxassetid://109619268613730",
-                                "rbxassetid://90453834580322",
-                                "rbxassetid://82173577293417",
-                                "rbxassetid://88369503310562",
-                                "rbxassetid://80708025126373",
-                                "rbxassetid://111949903851987",
-                                "rbxassetid://135181794444219",
+                                "rbxassetid://105768583494591",
+                                "rbxassetid://117811266463116",
                             }
 
                             local amousBgIdx, amousCleanApplyBackground, amousCleanUpdateBackgroundSelection, numericValue34, amousCleanApplyButtonBackground
 
                             do
-                                local dataTable45 = { { value = 0, name = "NONE", asset = "" } }
+                                local dataTable45 = {}
 
                                 for i, temporaryValue93 in ipairs(dataTable44) do
                                     dataTable45[#dataTable45 + 1] = { value = i, name = tostring(i), asset = temporaryValue93 }
@@ -15800,9 +15788,11 @@ end
 
                                 amousBgIdx = tonumber(_G._AmousBgIdx)
 
-                                if amousBgIdx == nil or amousBgIdx < 0 or amousBgIdx > #dataTable44 then
-                                    amousBgIdx = 0
+                                if amousBgIdx == nil or amousBgIdx < 1 or amousBgIdx > #dataTable44 then
+                                    amousBgIdx = 1
                                 end
+
+                                amousBgIdx = math.floor(amousBgIdx)
 
                                 _G._AmousBgIdx = amousBgIdx
 
@@ -16072,12 +16062,6 @@ end
                                 createTextButton3(">", false).Activated:Connect(function()
                                     helperFunction73(1)
                                 end)
-
-                                do
-                                    local amousBgSection = Settings:FindFirstChild("Section_Background")
-                                    if amousBgSection then amousBgSection:Destroy() end
-                                    if frame4 then frame4:Destroy() end
-                                end
 
                                 local dataTable47 = {
                                     "DEFAULT",
@@ -18843,23 +18827,6 @@ end
                                         pcall(helperFunction29)
                                     end)
 
-                                    helperFunction78(Utility, "Try Hard Animation", function(enabled)
-                                        _G._AmousTryHard.enabled = enabled
-
-                                        if enabled then
-                                            if true then
-                                                task.spawn(_G._AmousApplyTryHard)
-                                            else
-                                                while true do
-                                                end
-                                            end
-                                        else
-                                            _G._AmousStopTryHard()
-                                        end
-
-                                        pcall(function() end, "[Toggle] Try Hard =", enabled)
-                                        pcall(helperFunction29)
-                                    end)
                                 end
 
                                 if Settings then
@@ -19856,13 +19823,8 @@ end
                                         end
                                     end
 
-                                    if _G._amousLoadedTryHard and _G._AmousTryHard then
-                                        _G._AmousTryHard.enabled = true
-                                        pcall(_G._AmousApplyTryHard)
-
-                                        if handlers["Try Hard Animation"] then
-                                            handlers["Try Hard Animation"](true, true)
-                                        end
+                                    if _G._AmousTryHard and _G._AmousTryHard.enabled and _G._AmousStopTryHard then
+                                        pcall(_G._AmousStopTryHard)
                                     end
 
                                     if _G._loadedOn_autoSwing then
@@ -20528,8 +20490,8 @@ end
                                             _G._AmousTpBatMode = "HIGH PING"
                                             _G._AmousStealMode = "NORMAL"
                                             _G._AmousAutoCarryMode = "ON STEAL"
-                                            _G._AmousSkyMode = "Lavender Dream"
-                                            _G._AmousAnimPack = "Amazon Unboxed"
+                                            _G._AmousSkyMode = "Off"
+                                            _G._AmousAnimPack = "Off"
                                             pcall(_G._AmousStartSky, _G._AmousSkyMode)
                                             pcall(_G._AmousApplyAnimPack, _G._AmousAnimPack)
                                             _G._AmousDesyncMode = "V2"
@@ -20564,7 +20526,6 @@ end
                                             helperFunction94(Combat, "SEMI Range", stealSystem.CFG.STEAL_RANGE)
                                             helperFunction94(Combat, "Auto Bat Speed", combatSettings.aimSpd)
                                             _G._AmousTpBatSwingDelay = 0.007
-                                            helperFunction94(Combat, "TP Swing Delay", string.format("%.3f", _G._AmousTpBatSwingDelay))
                                             helperFunction94(Utility, "FOV Value", performanceSettings.fovVal)
 
                                             for _, temporaryValue110 in ipairs({
@@ -20579,7 +20540,6 @@ end
                                                 "Medusa Counter",
                                                 "Bodylock",
                                                 "Match Speed",
-                                                "Try Hard Animation",
                                                 "Stretch Res",
                                                 "Potato Graphics",
                                                 "Background Color",
@@ -20619,8 +20579,8 @@ end
                                                 pcall(_G.AutoCounter.setEnabled, false)
                                             end
 
-                                            amousBgIdx = 0
-                                            _G._AmousBgIdx = 0
+                                            amousBgIdx = 1
+                                            _G._AmousBgIdx = 1
                                             amousCleanApplyBackground()
                                             amousCleanUpdateBackgroundSelection()
                                             conditionFlag30 = false
@@ -20922,10 +20882,6 @@ end
                                     helperFunction92(Combat, "Auto Bat Speed", function(argumentValue)
                                         combatSettings.aimSpd = math.clamp(argumentValue, 1, 200)
                                     end, combatSettings.aimSpd)
-
-                                    helperFunction92(Combat, "TP Swing Delay", function(argumentValue)
-                                        _G._AmousTpBatSwingDelay = math.clamp(argumentValue, 0.001, 1)
-                                    end, string.format("%.3f", _G._AmousTpBatSwingDelay))
 
                                     helperFunction92(Utility, "FOV Value", function(argumentValue)
                                         performanceSettings.fovVal = math.clamp(argumentValue, 1, 120)
@@ -21361,6 +21317,13 @@ end
 
 
                                 local function amousApplyAnimPack(amousAnimPack)
+                                    local amousAnimRevision = (_G._AmousAnimApplyRev or 0) + 1
+                                    _G._AmousAnimApplyRev = amousAnimRevision
+                                    if amousAnimPack ~= "Off" and not dataTable45[amousAnimPack] then
+                                        amousAnimPack = "Off"
+                                    end
+                                    _G._AmousAnimPack = amousAnimPack
+
                                     if amousAnimPack == "Off" or not dataTable45[amousAnimPack] then
                                         local character = localPlayer.Character
 
@@ -21374,7 +21337,6 @@ end
                                             end
                                         end
 
-                                        _G._AmousAnimPack = "Off"
                                         return
                                     end
 
@@ -21394,7 +21356,7 @@ end
                                         break
                                     end
 
-                                    if not animate then
+                                    if not animate or _G._AmousAnimApplyRev ~= amousAnimRevision then
                                         return
                                     end
 
@@ -21448,11 +21410,10 @@ end
                                         end)
                                     end
 
-                                    _G._AmousAnimPack = amousAnimPack
                                 end
 
                                 _G._AmousApplyAnimPack = amousApplyAnimPack
-                                _G._AmousAnimPack = _G._AmousAnimPack or "Amazon Unboxed"
+                                _G._AmousAnimPack = _G._AmousAnimPack or "Off"
 
                                 if _G._AmousAnimPack ~= "Off" then
                                     task.defer(amousApplyAnimPack, _G._AmousAnimPack)
