@@ -11512,7 +11512,7 @@ end
                                     panel = Color3.fromRGB(0, 0, 0),
                                     row = Color3.fromRGB(0, 0, 0),
                                     rowHover = Color3.fromRGB(240, 255, 255),
-                                    key = Color3.fromRGB(24, 8, 16),
+                                    key = Color3.fromRGB(138, 142, 150),
                                     stroke = Color3.fromRGB(72, 60, 90),
                                     text = Color3.fromRGB(255, 255, 255),
                                     muted = Color3.fromRGB(190, 187, 202),
@@ -15604,6 +15604,7 @@ end
                             createTextLabel(Settings, "Mobile Buttons")
                             amousCleanCreateSettingRow(Settings, "Advanced Lagger Button", { toggle = true }).Visible = amousSafeModeEnabled
                             amousCleanCreateSettingRow(Settings, "Circle Buttons", { toggle = true })
+                            amousCleanCreateSettingRow(Settings, "Lock Buttons", { toggle = true })
                             local temporaryValue92, moveButtons, resetButtons
 
                             do
@@ -15799,7 +15800,7 @@ end
                                         sectionMobileButtons.Visible = false
                                     end
 
-                                    for _, temporaryValue96 in ipairs({ Settings:FindFirstChild("Circle Buttons"), hideMobButtons, frame4, temporaryValue94, moveButtons, resetButtons }) do
+                                    for _, temporaryValue96 in ipairs({ Settings:FindFirstChild("Circle Buttons"), Settings:FindFirstChild("Lock Buttons"), hideMobButtons, frame4, temporaryValue94, moveButtons, resetButtons }) do
                                         if temporaryValue96 then
                                             temporaryValue96.Visible = false
                                         end
@@ -16556,11 +16557,11 @@ end
                                 }
 
                                 local tabIcons = {
-                                    Movement = "🏃",
-                                    Combat = "⚔️",
-                                    Utility = "👁️",
-                                    Settings = "⚙️",
-                                    Keybinds = "⌨️",
+                                    Movement = ">>",
+                                    Combat = "/\\",
+                                    Utility = "[o]",
+                                    Settings = "+",
+                                    Keybinds = "[::]",
                                 }
 
                                 for i, temporaryValue94 in ipairs({ "Movement", "Combat", "Utility", "Settings", "Keybinds" }) do
@@ -18910,6 +18911,8 @@ end
                                         pcall(helperFunction29)
                                     end)
 
+                                    _G._AmousAdvancedLaggerButton = true
+
                                     if handlers["Advanced Lagger Button"] then
                                         handlers["Advanced Lagger Button"](_G._AmousAdvancedLaggerButton == true, true)
                                     end
@@ -18928,6 +18931,21 @@ end
 
                                     if handlers["Circle Buttons"] then
                                         handlers["Circle Buttons"](_G._AmousCircleButtons == true, true)
+                                    end
+
+                                    helperFunction78(Settings, "Lock Buttons", function(amousLockValue)
+                                        amousMobileBtnLocked = amousLockValue and true or false
+                                        _G._AmousMobileBtnLocked = amousMobileBtnLocked
+
+                                        if autoSettings.auto then
+                                            task.spawn(function()
+                                                pcall(helperFunction29)
+                                            end)
+                                        end
+                                    end)
+
+                                    if handlers["Lock Buttons"] then
+                                        handlers["Lock Buttons"](amousMobileBtnLocked == true, true)
                                     end
 
                                     helperFunction78(Settings, "Intro", function(amousIntroEnabled)
@@ -20261,6 +20279,16 @@ end
                                             handlers["Steal Bar Match"](_G._AmousStealBarMatch == true, true)
                                         end
 
+                                        task.delay(1, function()
+                                            for _, amousRemoveName in ipairs({ "Background Color", "Steal Bar Match", "ColorThemePicker", "Advanced Lagger Button", "Move Buttons" }) do
+                                                local amousRemoveRow = Settings and Settings:FindFirstChild(amousRemoveName)
+
+                                                if amousRemoveRow then
+                                                    amousRemoveRow:Destroy()
+                                                end
+                                            end
+                                        end)
+
                                         createTextLabel(Settings, "UI Scale")
 
                                         local uiScale2, temporaryValue97, temporaryValue98 = amousCleanCreateStepper(Settings, "UI Scale", amousUIScale, 60, 150, 5, function(amousUIScale2)
@@ -20670,7 +20698,8 @@ end
                                     helperFunction94("Steal Bar Match", 24)
                                     helperFunction94("Section_Mobile Buttons", 30)
                                     helperFunction94("Advanced Lagger Button", 31)
-                                    helperFunction94("Circle Buttons", 40)
+                                    helperFunction94("Lock Buttons", 31)
+                                    helperFunction94("Circle Buttons", 32)
                                     helperFunction94("Hide Mob Buttons", 33)
                                     helperFunction94("HideSpecificButtonsList", 34)
                                     helperFunction94("Button Size %", 35)
