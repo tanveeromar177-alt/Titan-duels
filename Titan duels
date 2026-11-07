@@ -454,8 +454,8 @@ end
                                         end
 
                                         _G._AmousUiSoundIds = {
-                                            toggle = "rbxassetid://70674035589235",
-                                            gui = "rbxassetid://98266757998484",
+                                            toggle = "rbxassetid://140494750798924",
+                                            gui = "rbxassetid://89997935036815",
                                         }
 
                                         _G._AmousPlayUiSound = function(kind)
@@ -497,6 +497,22 @@ end
                                                 end
                                             end)
                                         end)
+
+                                        _G._AmousNotify = function(text)
+                                            if tick() - (_G._AmousLastNotifyAt or 0) < 2 then
+                                                return
+                                            end
+
+                                            _G._AmousLastNotifyAt = tick()
+
+                                            pcall(function()
+                                                game:GetService("StarterGui"):SetCore("SendNotification", {
+                                                    Title = "Amous",
+                                                    Text = tostring(text):sub(1, 120),
+                                                    Duration = 6,
+                                                })
+                                            end)
+                                        end
 
                                         font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
                                         _G._AmousFontMode = _G._AmousFontMode == "PIXEL" and "PIXEL" or "DEFAULT"
@@ -7193,6 +7209,7 @@ end
                                         str9 = "no file api"
                                         conditionFlag26 = false
                                         warn("[AmousDuels] save failed: no readfile/writefile API in this executor")
+                                        if _G._AmousNotify then _G._AmousNotify("Save failed: no file API in this executor") end
                                         return false
                                     end
 
@@ -7278,8 +7295,9 @@ end
                                         tpBat = combatSettings.desync or false,
                                         mirrorTP = combatSettings.tpMirror or false,
                                         desyncMode = "V2",
-                                        autoLeft = false,
-                                        autoRight = false,
+                                        autoLeft = autoPathState.L == true or (_G._AmousSafeModeState and _G._AmousSafeModeState.pending and _G._AmousSafeModeState.pending.autoLeft == true) or false,
+                                        autoRight = autoPathState.R == true or (_G._AmousSafeModeState and _G._AmousSafeModeState.pending and _G._AmousSafeModeState.pending.autoRight == true) or false,
+                                        kickWarning = _G._AmousKickWarningEnabled == true,
                                         autoCarry = _G._AmousAutoCarry == true,
                                         antiDie = _G._AmousVasperAntiDieEnabled == true,
                                         autoSwing = combatSettings.swing or false,
@@ -7298,6 +7316,7 @@ end
                                         showTracer = _G._AmousESPShowTracer == nil and true or _G._AmousESPShowTracer,
                                     }
 
+                                    _G._AmousLastSnapshot = dataTable37
                                     _G._AmousSaveState.writing = true
 
                                     local ok, result = pcall(function()
@@ -7322,6 +7341,7 @@ end
                                         str9 = tostring(result):sub(1, 60)
                                         conditionFlag26 = false
                                         warn("[AmousDuels] save failed: " .. tostring(result))
+                                        if _G._AmousNotify then _G._AmousNotify("Save failed: " .. tostring(result):sub(1, 70)) end
                                         return false
                                     end
 
@@ -7373,6 +7393,7 @@ end
                                 helperFunction43 = function()
                                     if not _G._AmousResolveSaveApi() then
                                         pcall(function() end, "[AmousLoad] SKIP - no readfile/writefile API")
+                                        if _G._AmousNotify then _G._AmousNotify("No readfile/writefile: settings cannot be saved") end
                                         return
                                     end
                                     local amousLoadedUnifiedV5 = false
@@ -7399,11 +7420,19 @@ end
                                                 conditionFlag29 = ok2
                                             end
 
-                                            conditionFlag29 = conditionFlag29 and tonumber(result2.revision) or -1
+                                            conditionFlag29 = conditionFlag29 and tonumber(result2.revision) or 0
                                             ok2 = ok and ok2 and type(result2) == "table" and result2.configVersion == 5
 
 
-                                            if ok2 and conditionFlag29 >= 0 and type(result2.keys) == "table" and type(result2.ctrlKeys) == "table" and type(result2.on) == "table" and type(result2.mobileButtonProfiles) == "table" and type(result2.skin) == "table" and conditionFlag29 > revision then
+                                            if ok2 then
+                                                for _, amousRequiredKey in ipairs({ "keys", "ctrlKeys", "on", "mobileButtonProfiles", "skin" }) do
+                                                    if type(result2[amousRequiredKey]) ~= "table" then
+                                                        result2[amousRequiredKey] = {}
+                                                    end
+                                                end
+                                            end
+
+                                            if ok2 and conditionFlag29 >= 0 and conditionFlag29 > revision then
                                                 str11 = result
                                                 revision = conditionFlag29
                                                 str10 = temporaryValue78
@@ -7412,6 +7441,16 @@ end
 
                                             conditionFlag28 = true
                                         end
+                                    end
+
+                                    local amousSnapshot = _G._AmousLastSnapshot
+
+                                    if type(amousSnapshot) == "table" and amousSnapshot.userId == localPlayer.UserId and (not dataTable37 or (tonumber(amousSnapshot.revision) or 0) > revision) then
+                                        dataTable37 = amousSnapshot
+                                        revision = tonumber(amousSnapshot.revision) or 0
+                                        str11 = "{}"
+                                        str10 = "memory snapshot"
+                                        conditionFlag28 = true
                                     end
 
                                     if dataTable37 then
@@ -7469,6 +7508,7 @@ end
                                         pcall(_G._AmousLoadControllerBindings)
                                         if conditionFlag28 then
                                             pcall(function() end, "[AmousLoad] FAIL - config files exist but none passed validation")
+                                            if _G._AmousNotify then _G._AmousNotify("Config file found but could not be read/parsed") end
                                             return false
                                         end
                                         _G._AmousConfigLoadReady = true
@@ -7872,8 +7912,8 @@ end
                                         end
 
                                         _G._AmousDesyncMode = "V2"
-                                        _G._loadedOn_autoLeft = false
-                                        _G._loadedOn_autoRight = false
+                                        _G._loadedOn_autoLeft = on.autoLeft == true
+                                        _G._loadedOn_autoRight = on.autoRight == true
 
                                         if type(on.autoCarry) == "boolean" then
                                             _G._loadedOn_autoCarry = on.autoCarry
@@ -7882,8 +7922,8 @@ end
 
                                         _G._loadedOn_safeMode = false
                                         _G._AmousSafeModeEnabled = false
-                                        _G._loadedOn_kickWarning = false
-                                        _G._AmousKickWarningEnabled = false
+                                        _G._loadedOn_kickWarning = on.kickWarning == true
+                                        _G._AmousKickWarningEnabled = on.kickWarning == true
 
                                         if type(on.antiDie) == "boolean" then
                                             _G._loadedOn_antiDie = on.antiDie
@@ -7970,6 +8010,7 @@ end
                                     local concat = table.concat
                                     pcall(function() end, string.format("[AmousLoad] OK NS=%s family=%s carry=%s sky=%s drop=%s tp=%s bat=%s ON=[%s]", tostring(dataTable37.NS), tostring(dataTable37.family), tostring(dataTable37.carry), tostring(dataTable37.skyMode), tostring(dataTable37.dropMode), tostring(dataTable37.tpMode), tostring(dataTable37.batMode), concat(dataTable38, ",")))
                                     _G._AmousConfigLoadReady = true
+                                    if _G._AmousNotify then _G._AmousNotify("Config loaded from " .. tostring(str10) .. ": " .. tostring(#dataTable38) .. " toggles on") end
                                     return true
                                 end
 
@@ -16656,6 +16697,12 @@ end
                                         task.defer(_G._AmousResyncToggles)
                                     end
 
+                                    if not argumentValue and _G._AmousSettingsReady == true then
+                                        task.defer(function()
+                                            pcall(helperFunction29, true)
+                                        end)
+                                    end
+
                                     if temporaryValue94 then
                                         if frame3 then
                                             frame3.Visible = false
@@ -16821,7 +16868,13 @@ end
                                         local amousNewToggleValue = not conditionFlag29
                                         helperFunction79(amousNewToggleValue, false)
 
-                                        if amousNewToggleValue and _G._AmousPlayUiSound then
+                                        if _G._AmousSettingsReady == true then
+                                            task.defer(function()
+                                                pcall(helperFunction29, true)
+                                            end)
+                                        end
+
+                                        if _G._AmousPlayUiSound then
                                             _G._AmousPlayUiSound("toggle")
                                         end
                                     end)
