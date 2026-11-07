@@ -45,6 +45,32 @@ _G.__AstrixLogo = function(img)
     return t
 end
 
+task.spawn(function()
+    pcall(function()
+        local lp = game:GetService("Players").LocalPlayer
+        local pg = lp:WaitForChild("PlayerGui")
+        local old = pg:FindFirstChild("AstrixWatermark")
+        if old then
+            old:Destroy()
+        end
+        local gui = Instance.new("ScreenGui")
+        gui.Name = "AstrixWatermark"
+        gui.ResetOnSpawn = false
+        gui.IgnoreGuiInset = true
+        gui.DisplayOrder = 1000
+        gui.Parent = pg
+        local holder = Instance.new("ImageLabel")
+        holder.Name = "Holder"
+        holder.BackgroundTransparency = 1
+        holder.Size = UDim2.new(0, 150, 0, 36)
+        holder.AnchorPoint = Vector2.new(0.5, 0)
+        holder.Position = UDim2.new(0.5, 0, 0, 6)
+        holder.ZIndex = 5
+        holder.Parent = gui
+        _G.__AstrixLogo(holder)
+    end)
+end)
+
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
@@ -17018,7 +17044,7 @@ end
                                     Settings = "SETTINGS",
                                 }
 
-                                for i, temporaryValue94 in ipairs({ "Movement", "Combat", "Keybinds", "Utility", "Settings" }) do
+                                for i, temporaryValue94 in ipairs({ "Movement", "Combat", "Utility", "Settings", "Keybinds" }) do
                                     local textButton2 = Instance.new("TextButton")
                                     textButton2.Name = temporaryValue94
                                     textButton2.LayoutOrder = i
