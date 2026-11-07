@@ -1,3 +1,27 @@
+_G.__AstrixLogo = function(img)
+    img.Image = ""
+    local t = Instance.new("TextLabel")
+    t.Name = "AstrixText"
+    t.BackgroundTransparency = 1
+    t.Size = UDim2.new(1, 0, 1, 0)
+    t.Text = "Astrix"
+    t.Font = Enum.Font.GothamBlack
+    t.TextScaled = true
+    t.TextColor3 = Color3.fromRGB(255, 255, 255)
+    t.TextStrokeTransparency = 1
+    t.ZIndex = img.ZIndex
+    t:SetAttribute("_NoAdaptTheme", true)
+    t.Parent = img
+    local function sync()
+        t.TextTransparency = img.ImageTransparency
+    end
+    pcall(function()
+        img:GetPropertyChangedSignal("ImageTransparency"):Connect(sync)
+    end)
+    sync()
+    return t
+end
+
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
@@ -1005,7 +1029,7 @@ end
                                             instance.Size = UDim2.new(0.5, -10, 0, 8)
                                             instance.Position = UDim2.new(0, 10, 0, 22)
                                             instance.BackgroundTransparency = 1
-                                            instance.Text = "FPS: --  ·  PING: --  ·  discord.gg/qhAKyDcXE3"
+                                            instance.Text = "FPS: --  ·  PING: --  ·  discord.gg/AstrixHub"
                                             instance.TextColor3 = Color3.fromRGB(220, 220, 225)
                                             instance.Visible = false
                                             instance.Font = Enum.Font.GothamBold
@@ -1020,7 +1044,7 @@ end
                                             textLabel3.Size = UDim2.new(1, -20, 0, 18)
                                             textLabel3.Position = UDim2.new(0, 10, 0, 22)
                                             textLabel3.BackgroundTransparency = 1
-                                            textLabel3.Text = "discord.gg/qhAKyDcXE3"
+                                            textLabel3.Text = "discord.gg/AstrixHub"
                                             textLabel3.TextColor3 = Color3.fromRGB(255, 240, 255)
                                             textLabel3.TextTransparency = 0.25
                                             textLabel3.Font = Enum.Font.GothamMedium
@@ -3457,16 +3481,17 @@ end
 
                                             local billboardGui = Instance.new("BillboardGui", head)
                                             billboardGui.Name = "AdaptSpeedBB"
-                                            billboardGui.Size = UDim2.new(0, 170, 0, 60)
+                                            billboardGui.Size = UDim2.new(0, 120, 0, 44)
                                             billboardGui.StudsOffset = Vector3.new(0, 1.5, 0)
                                             billboardGui.AlwaysOnTop = true
                                             billboardGui.ResetOnSpawn = false
                                             billboardGui.LightInfluence = 0
                                             local instance = Instance.new("TextLabel", billboardGui)
                                             instance.Name = "Label"
-                                            instance.Size = UDim2.new(1, 0, 0.44, 0)
+                                            instance.Size = UDim2.new(1, 0, 0.3, 0)
+                                            instance.Position = UDim2.new(0, 0, 0.7, 0)
                                             instance.BackgroundTransparency = 1
-                                            instance.Text = "discord.gg/qhAKyDcXE3"
+                                            instance.Text = "discord.gg/AstrixHub"
                                             instance.TextColor3 = _G._AdaptAccent or Color3.fromRGB(255, 255, 255)
                                             instance.Font = Enum.Font.GothamBlack
                                             instance:SetAttribute("_AdaptForceGothamBlack", true)
@@ -3475,8 +3500,8 @@ end
                                             instance.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                                             local textLabel2 = Instance.new("TextLabel", billboardGui)
                                             textLabel2.Name = "AdaptSpeedValue"
-                                            textLabel2.Size = UDim2.new(1, 0, 1.3, 0)
-                                            textLabel2.Position = UDim2.new(0, 0, 0.55, 0)
+                                            textLabel2.Size = UDim2.new(1, 0, 0.62, 0)
+                                            textLabel2.Position = UDim2.new(0, 0, 0, 0)
                                             textLabel2.BackgroundTransparency = 1
                                             textLabel2.Text = "0 speed"
                                             textLabel2.TextColor3 = _G._AdaptAccent or Color3.fromRGB(255, 255, 240)
@@ -12044,6 +12069,7 @@ end
                                 instance2.Size = conditionFlag28 and UDim2.new(0.38, 0, 0, 78) or UDim2.new(0.92, 0, 0, 170)
                                 instance2.ZIndex = 1002
                                 instance2.Parent = frame2
+                                _G.__AstrixLogo(instance2)
                                 local textLabel = Instance.new("TextLabel")
                                 textLabel.Name = "TapAnywhere"
                                 textLabel.BackgroundTransparency = 1
@@ -12061,7 +12087,7 @@ end
                                 local textLabel2 = Instance.new("TextLabel")
                                 textLabel2.Name = "DiscordInvite"
                                 textLabel2.BackgroundTransparency = 1
-                                textLabel2.Text = "discord.gg/qhAKyDcXE3"
+                                textLabel2.Text = "discord.gg/AstrixHub"
                                 textLabel2.TextColor3 = Color3.fromRGB(255, 255, 255)
                                 textLabel2.TextTransparency = 1
                                 textLabel2.TextSize = conditionFlag28 and 12 or 40
@@ -13061,6 +13087,7 @@ end
                             imageButton.ScaleType = Enum.ScaleType.Fit
                             imageButton.AutoButtonColor = false
                             imageButton.ZIndex = 501
+                            _G.__AstrixLogo(imageButton)
 
 
                             local function helperFunction60()
@@ -13206,6 +13233,7 @@ end
                             instance4.Position = UDim2.new(0.5, -150, 0, -18)
                             instance4.ZIndex = 2
                             instance4.Parent = frame2
+                            _G.__AstrixLogo(instance4)
 
                             do
                                 local gothamBlack = Enum.Font.GothamBlack
@@ -16967,7 +16995,7 @@ end
                                     Settings = "SETTINGS",
                                 }
 
-                                for i, temporaryValue94 in ipairs({ "Movement", "Combat", "Keybinds", "Controller", "Utility", "Settings" }) do
+                                for i, temporaryValue94 in ipairs({ "Movement", "Combat", "Utility", "Settings", "Controller" }) do
                                     local textButton2 = Instance.new("TextButton")
                                     textButton2.Name = temporaryValue94
                                     textButton2.LayoutOrder = i
@@ -16978,7 +17006,7 @@ end
                                     textButton2.TextSize = 18
                                     textButton2.TextScaled = true
                                     textButton2.Font = Enum.Font.GothamBlack
-                                    textButton2.Size = UDim2.new(0.16666666666666666, -5, 1, 0)
+                                    textButton2.Size = UDim2.new(0.2, -5, 1, 0)
                                     textButton2.AutoButtonColor = false
                                     textButton2.ZIndex = 4
                                     textButton2.Parent = instance5
