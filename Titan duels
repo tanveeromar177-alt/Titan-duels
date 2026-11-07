@@ -205,7 +205,7 @@ end
                                                     instance2.Position = UDim2.fromScale(0.5, 0.5)
                                                     instance2.Size = UDim2.new(0.9, 0, 0, 50)
                                                     instance2.BackgroundTransparency = 1
-                                                    instance2.Text = "you loaded the script 2 times, the script will be bugged"
+                                                    instance2.Text = "you load script " .. tostring(_G._AmousExecutionCount) .. " times, script have been bugged"
                                                     instance2.TextColor3 = Color3.fromRGB(240, 45, 45)
                                                     instance2.TextStrokeColor3 = Color3.fromRGB(70, 0, 0)
                                                     instance2.TextStrokeTransparency = 0.15
@@ -1008,24 +1008,24 @@ end
                                             uiStroke.Color = color3
                                             uiStroke.Transparency = 1
                                             textLabel = Instance.new("TextLabel", frame2)
-                                            textLabel.Size = UDim2.new(0, 80, 0, 18)
-                                            textLabel.Position = UDim2.new(0, 10, 0, 4)
+                                            textLabel.Size = UDim2.new(0, 110, 0, 28)
+                                            textLabel.Position = UDim2.new(0, 12, 0, 20)
                                             textLabel.BackgroundTransparency = 1
                                             textLabel.Text = "0%"
                                             textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                                             textLabel.Font = Enum.Font.GothamBold
-                                            textLabel.TextSize = 11
+                                            textLabel.TextSize = 24
                                             textLabel.TextXAlignment = Enum.TextXAlignment.Left
                                             textLabel.TextStrokeTransparency = 1
                                             textLabel.ZIndex = 51
                                             textLabel2 = Instance.new("TextLabel", frame2)
-                                            textLabel2.Size = UDim2.new(0, 120, 0, 18)
-                                            textLabel2.Position = UDim2.new(1, -130, 0, 4)
+                                            textLabel2.Size = UDim2.new(0, 128, 0, 12)
+                                            textLabel2.Position = UDim2.new(1, -138, 1, -16)
                                             textLabel2.BackgroundTransparency = 1
                                             textLabel2.Text = "FPS --   PING --ms"
                                             textLabel2.TextColor3 = Color3.fromRGB(255, 255, 240)
                                             textLabel2.Font = Enum.Font.GothamBold
-                                            textLabel2.TextSize = 11
+                                            textLabel2.TextSize = 10
                                             textLabel2.TextXAlignment = Enum.TextXAlignment.Right
                                             textLabel2.TextStrokeTransparency = 1
                                             textLabel2.ZIndex = 51
@@ -1058,6 +1058,31 @@ end
                                             textLabel3.ZIndex = 51
                                             textLabel3.Visible = false
                                             textLabel3:SetAttribute("_AmousNoInvert", true)
+
+                                            local amousStealDot = Instance.new("Frame", frame2)
+                                            amousStealDot.Name = "AutoStealDot"
+                                            amousStealDot.Size = UDim2.fromOffset(8, 8)
+                                            amousStealDot.Position = UDim2.new(0, 12, 0, 9)
+                                            amousStealDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                                            amousStealDot.BorderSizePixel = 0
+                                            amousStealDot.ZIndex = 51
+                                            amousStealDot:SetAttribute("_NoAmousTheme", true)
+                                            amousStealDot:SetAttribute("_AmousNoInvert", true)
+                                            Instance.new("UICorner", amousStealDot).CornerRadius = UDim.new(1, 0)
+                                            local amousStealTitle = Instance.new("TextLabel", frame2)
+                                            amousStealTitle.Name = "AutoStealTitle"
+                                            amousStealTitle.Size = UDim2.new(0, 100, 0, 12)
+                                            amousStealTitle.Position = UDim2.new(0, 26, 0, 7)
+                                            amousStealTitle.BackgroundTransparency = 1
+                                            amousStealTitle.Text = "AUTO STEAL"
+                                            amousStealTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                            amousStealTitle.Font = Enum.Font.GothamBold
+                                            amousStealTitle.TextSize = 10
+                                            amousStealTitle.TextXAlignment = Enum.TextXAlignment.Left
+                                            amousStealTitle.TextStrokeTransparency = 1
+                                            amousStealTitle.ZIndex = 51
+                                            amousStealTitle:SetAttribute("_NoAmousTheme", true)
+                                            amousStealTitle:SetAttribute("_AmousNoInvert", true)
 
                                             do
                                                 local function helperFunction43(argumentValue)
@@ -1099,8 +1124,8 @@ end
 
                                         do
                                             local instance2 = Instance.new("Frame", frame2)
-                                            instance2.Size = UDim2.new(1, -20, 0, 18)
-                                            instance2.Position = UDim2.new(0, 10, 1, -22)
+                                            instance2.Size = UDim2.new(0.58, -12, 0, 24)
+                                            instance2.Position = UDim2.new(0.42, 0, 0, 8)
                                             instance2.BackgroundColor3 = Color3.fromRGB(26, 26, 18)
                                             instance2.BorderSizePixel = 0
                                             instance2.ZIndex = 15
@@ -1109,7 +1134,7 @@ end
                                             Instance.new("UIStroke", instance2).Transparency = 1
                                             frame = Instance.new("Frame", instance2)
                                             frame.Size = UDim2.fromScale(0, 1)
-                                            frame.BackgroundColor3 = color2
+                                            frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
                                             frame.BorderSizePixel = 0
                                             frame.ZIndex = 52
                                             Instance.new("UICorner", frame).CornerRadius = UDim.new(1, 0)
@@ -1117,9 +1142,20 @@ end
                                             instance3.Name = "ProgressFillShade"
                                             instance3.Rotation = 90
 
+                                            for amousTickIndex = 1, 4 do
+                                                local amousTick = Instance.new("Frame", instance2)
+                                                amousTick.Name = "ProgressTick"
+                                                amousTick.Size = UDim2.new(0, 1, 1, 0)
+                                                amousTick.Position = UDim2.fromScale(amousTickIndex / 5, 0)
+                                                amousTick.BackgroundColor3 = Color3.fromRGB(120, 130, 150)
+                                                amousTick.BackgroundTransparency = 0.55
+                                                amousTick.BorderSizePixel = 0
+                                                amousTick.ZIndex = 54
+                                            end
+
                                             _G._AmousApplyStealBarInvert = function()
                                                 local conditionFlag17 = _G._AmousInvertUI == true
-                                                local amousAccent = _G._AmousAccent or color2
+                                                local amousAccent = Color3.fromRGB(255, 255, 255)
                                                 frame2.BackgroundColor3 = conditionFlag17 and Color3.fromRGB(248, 252, 250) or Color3.fromRGB(0, 0, 0)
                                                 textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                                                 textLabel2.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -7064,7 +7100,7 @@ end
 
                         do
                             do
-                                helperFunction29 = function(argumentValue)
+                                _G._AmousSaveImpl = function(argumentValue)
                                     if not helperFunction42() then
                                         return false
                                     end
@@ -7130,7 +7166,7 @@ end
                                     dataTable37.family = speedSettings.family
                                     dataTable37.carry = speedSettings.carry
                                     dataTable37.aimSpd = combatSettings.aimSpd
-                                    dataTable37.autoPathMatchSpeed = _G._AmousAutoPathMatchSpeed == true
+                                    dataTable37.autoPathMatchSpeed = false
                                     dataTable37.antiDropEnabled = _G._AmousAntiDropEnabled == true
                                     dataTable37.fovVal = performanceSettings.fovVal
                                     dataTable37.autoTPHeight = autoTPState.height
@@ -7263,6 +7299,22 @@ end
                                     local concat = table.concat
                                     pcall(function() end, string.format("[AmousSave] OK NS=%s CS=%s LG=%s/%s family=%s carry=%s sky=%s anim=%s drop=%s tp=%s inf=%s bat=%s ON=[%s]", tostring(dataTable37.NS), tostring(dataTable37.CS), tostring(dataTable37.LG_N), tostring(dataTable37.LG_C), tostring(dataTable37.family), tostring(dataTable37.carry), tostring(dataTable37.skyMode), tostring(dataTable37.animPack), tostring(dataTable37.dropMode), tostring(dataTable37.tpMode), tostring(dataTable37.infJumpMode), tostring(dataTable37.batMode), concat(dataTable38, ",")))
                                     return true
+                                end
+
+                                helperFunction29 = function(argumentValue)
+                                    local ok, result = pcall(_G._AmousSaveImpl, argumentValue)
+
+                                    if not ok then
+                                        if _G._AmousSaveState then
+                                            _G._AmousSaveState.writing = false
+                                        end
+
+                                        _G._AmousLastSaveError = tostring(result)
+                                        warn("[AmousDuels] save error: " .. tostring(result))
+                                        return false
+                                    end
+
+                                    return result
                                 end
 
                                 _G._AmousRequestSave = function(argumentValue)
@@ -7416,9 +7468,7 @@ end
                                         combatSettings.aimSpd = dataTable37.aimSpd
                                     end
 
-                                    if type(dataTable37.autoPathMatchSpeed) == "boolean" then
-                                        _G._AmousAutoPathMatchSpeed = dataTable37.autoPathMatchSpeed
-                                    end
+                                    _G._AmousAutoPathMatchSpeed = false
 
                                     if type(dataTable37.antiDropEnabled) == "boolean" then
                                         _G._AmousAntiDropEnabled = dataTable37.antiDropEnabled
@@ -14863,7 +14913,6 @@ end
                                 createTextLabel(Combat, "Auto Path")
                                 amousCleanCreateSettingRow(Combat, "Auto Left", { toggle = true })
                                 amousCleanCreateSettingRow(Combat, "Auto Right", { toggle = true })
-                                amousCleanCreateSettingRow(Combat, "Match Speed", { toggle = true })
                                 createTextLabel(Combat, "Counters")
                                 amousCleanApplyBackground(Combat, "Bat Counter", "V1", "V2", { toggle = true })
                                 amousCleanCreateSettingRow(Combat, "Medusa Counter", { toggle = true })
@@ -18586,12 +18635,6 @@ end
                                         end)
                                     end)
 
-                                    helperFunction78(Combat, "Match Speed", function(argumentValue)
-                                        _G._AmousAutoPathMatchSpeed = argumentValue == true
-                                        pcall(function() end, "[Toggle] Match Speed =", _G._AmousAutoPathMatchSpeed)
-                                        pcall(helperFunction29)
-                                    end)
-
                                     helperFunction78(Combat, "Auto Steal", function(autoSteal)
                                         autoStealState.AutoSteal = autoSteal
                                         stealSettings.AutoStealEnabled = autoSteal
@@ -19620,6 +19663,13 @@ end
                                     end
                                 end)
 
+                                task.delay(12, function()
+                                    if _G._AmousSettingsReady ~= true and helperFunction42() then
+                                        warn("[AmousDuels] boot restore did not finish in 12s; enabling saves anyway")
+                                        _G._AmousSettingsReady = true
+                                    end
+                                end)
+
                                 task.spawn(function()
                                     local amousBootOk, amousBootErr = pcall(function()
                                     task.wait(0.35)
@@ -19644,7 +19694,7 @@ end
 
                                     task.wait(0.15)
                                     pcall(_G._AmousApplyFontMode, screenGui)
-
+                                    if not pcall(function()
                                     if conditionFlag16 then
                                         ragdollCountdownState.enabled = true
                                         pcall(amousCleanStartRagdollCountdown)
@@ -19654,6 +19704,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._AmousLoadedOnLookAtEnemy then
                                         if _G._AmousLookAtEnemy and _G._AmousLookAtEnemy.SetEnabled then
                                             _G._AmousLookAtEnemy.SetEnabled(true)
@@ -19664,6 +19719,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if false then
                                         if _G._AmousNeonWhiteTools and _G._AmousNeonWhiteTools.SetEnabled then
                                             _G._AmousNeonWhiteTools.SetEnabled(true)
@@ -19674,6 +19734,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if conditionFlag17 then
                                         autoTPState.enabled = true
                                         pcall(_G._AmousStartAutoTP)
@@ -19683,46 +19748,111 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     _G._AmousSafeModeSetEnabled(_G._loadedOn_safeMode == true, false)
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if handlers["Safe Mode"] then
                                         handlers["Safe Mode"](_G._AmousSafeModeEnabled == true, true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     _G._AmousKickWarningEnabled = _G._loadedOn_kickWarning ~= false
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._AmousKickWarning and type(_G._AmousKickWarning.SetEnabled) == "function" then
                                         _G._AmousKickWarning.SetEnabled(_G._AmousKickWarningEnabled)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if handlers["Kick Warning"] then
                                         handlers["Kick Warning"](_G._AmousKickWarningEnabled, true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._AmousNormalStealRagdollState and _G._AmousNormalStealRagdollState.SetEnabled then
                                         _G._AmousNormalStealRagdollState.SetEnabled(_G._AmousRagdollStealEnabled ~= false)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if handlers["Ragdoll Steal"] then
                                         handlers["Ragdoll Steal"](_G._AmousRagdollStealEnabled ~= false, true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_batAimbot then
                                         _G._AmousSafeModeSetAction("aimbot", true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     combatSettings.tpMirror = _G._loadedOn_mirrorTP == true
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_desyncAimbot then
                                         _G._AmousSafeModeSetAction("tpBat", true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     _G._AmousTPMirrorEnabled = combatSettings.tpMirror and combatSettings.aimbot
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if handlers["Mirror TP"] then
                                         handlers["Mirror TP"](combatSettings.tpMirror, true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_autoLeft then
                                         autoPathState.L = true
                                         pcall(autoPathState.startL)
@@ -19732,6 +19862,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_autoRight then
                                         autoPathState.R = true
                                         pcall(autoPathState.startR)
@@ -19741,6 +19876,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_autoCarry then
                                         _G._AmousAutoCarry = true
                                         pcall(_G._AmousStartAutoCarry)
@@ -19750,6 +19890,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if conditionFlag22 then
                                         pcall(function() end, "[Boot] Restoring FOV Change")
                                         performanceSettings.fov = true
@@ -19760,6 +19905,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if conditionFlag21 then
                                         pcall(function() end, "[Boot] Restoring Stretch Res")
                                         performanceSettings.stretch = true
@@ -19770,6 +19920,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if antiLag then
                                         pcall(function() end, "[Boot] Restoring Anti-Lag")
                                         performanceSettings.antilag = true
@@ -19782,6 +19937,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._AmousLoadedOnPotato then
                                         pcall(function() end, "[Boot] Restoring Potato Graphics")
                                         _G._AmousPotatoGraphics = true
@@ -19792,6 +19952,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if conditionFlag23 then
                                         pcall(function() end, "[Boot] Restoring ESP")
 
@@ -19804,16 +19969,36 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     pcall(function() end, "[Boot] Restoring Show Tracer", conditionFlag24 and "ON" or "OFF")
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._AmousESPSetShowTracer then
                                         pcall(_G._AmousESPSetShowTracer, conditionFlag24 and true or false)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if handlers["Show Tracer"] then
                                         handlers["Show Tracer"](conditionFlag24 and true or false, true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if infJump then
                                         pcall(function() end, "[Boot] Restoring Infinite Jump")
                                         amousCleanSetRagdollFlag(true)
@@ -19823,10 +20008,20 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._AmousTryHard and _G._AmousTryHard.enabled and _G._AmousStopTryHard then
                                         pcall(_G._AmousStopTryHard)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_autoSwing then
                                         combatSettings.swing = true
 
@@ -19835,6 +20030,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if conditionFlag19 then
                                         pcall(amousCleanEnableBatCounter)
 
@@ -19843,6 +20043,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if conditionFlag20 then
                                         conditionFlag25 = true
                                         pcall(_G._AmousStartMedusaCounter)
@@ -19852,6 +20057,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._amousLoadedAntiBat and _G._AmousAntiBat then
                                         _G._AmousAntiBat.enabled = true
                                         pcall(_G._AmousStartAntiBat)
@@ -19861,6 +20071,11 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if _G._loadedOn_antiDie == true then
                                         _G._AmousVasperAntiDieEnabled = true
                                         pcall(_G._AmousVasperAntiDie.start)
@@ -19870,17 +20085,42 @@ end
                                         end
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     autoStealState.AutoSteal = conditionFlag18 ~= false
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     stealSettings.AutoStealEnabled = autoStealState.AutoSteal
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if handlers["Auto Steal"] then
                                         handlers["Auto Steal"](autoStealState.AutoSteal, true)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     if autoStealState.AutoSteal then
                                         pcall(amousCleanStartStealByMode)
                                     end
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     task.spawn(function()
                                         while task.wait(3) do
                                             if autoStealState.AutoSteal then
@@ -19897,8 +20137,22 @@ end
                                         end
                                     end)
 
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
+                                    if not pcall(function()
                                     amousSyncMobile()
+                                    end) then
+                                        _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
+                                    end
+
                                     end)
+
+                                    if (_G._AmousBootFailures or 0) > 0 then
+                                        warn("[AmousDuels] " .. tostring(_G._AmousBootFailures) .. " boot restore step(s) failed")
+                                        _G._AmousBootFailures = 0
+                                    end
 
                                     if not amousBootOk then
                                         warn("[AmousDuels] boot restore error: " .. tostring(amousBootErr))
