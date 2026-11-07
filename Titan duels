@@ -6226,7 +6226,7 @@ end
 
                                         local dataTable38 = { ["***"] = { 263995361762992 } }
                                         local dataTable39 = {}
-                                        local conditionFlag28 = true
+                                        local conditionFlag28 = false
                                         local str11 = "***"
                                         local conditionFlag29 = false
                                         local dataTable40 = nil
@@ -6301,7 +6301,7 @@ end
                                             end)
 
                                             if ok and type(result) == "table" and result.version == 2 then
-                                                conditionFlag28 = result.enabled == true
+                                                conditionFlag28 = false
 
                                                 if dataTable37[result.preset] then
                                                     str11 = result.preset
@@ -6682,7 +6682,7 @@ end
                                                     end
                                                 end
 
-                                                conditionFlag28 = argumentValue == true
+                                                conditionFlag28 = false
 
                                                 if conditionFlag28 then
                                                     amousCleanApplyUIScale()
@@ -6701,7 +6701,7 @@ end
                                                 end
                                             end,
                                             SetEnabled = function(argumentValue)
-                                                conditionFlag28 = argumentValue == true
+                                                conditionFlag28 = false
 
                                                 if conditionFlag28 then
                                                     amousCleanApplyUIScale()
@@ -13600,24 +13600,24 @@ end
                                     local instance7 = Instance.new("Frame")
                                     instance7.BackgroundColor3 = dataTable37.key
                                     instance7.BackgroundTransparency = 0.2
-                                    instance7.Size = UDim2.new(0, 34, 0, 14)
-                                    instance7.Position = UDim2.new(0.5, -17, 0.5, -9)
+                                    instance7.Size = UDim2.new(0, 38, 0, 20)
+                                    instance7.Position = UDim2.new(0.5, -19, 0.5, -10)
                                     instance7.BorderSizePixel = 0
                                     instance7.ZIndex = 5
                                     instance7.Parent = instance6
                                     instance7:SetAttribute("_AmousToggleTrack", true)
                                     instance7:SetAttribute("_AmousToggleOn", false)
-                                    amousCleanAddCorner(instance7, 6)
+                                    amousCleanAddCorner(instance7, 4)
                                     amousCleanAddGradientStroke(instance7, 1)
                                     local frame4 = Instance.new("Frame")
                                     frame4.BackgroundColor3 = Color3.fromRGB(238, 238, 245)
-                                    frame4.Size = UDim2.new(0, 13, 0, 13)
-                                    frame4.Position = UDim2.new(0, 10, 0.5, -6)
+                                    frame4.Size = UDim2.new(0, 14, 0, 14)
+                                    frame4.Position = UDim2.new(0, 3, 0.5, -7)
                                     frame4.BorderSizePixel = 0
                                     frame4.ZIndex = 5
                                     frame4.Parent = instance7
                                     frame4:SetAttribute("_AmousToggleDot", true)
-                                    amousCleanAddCorner(frame4, 7)
+                                    amousCleanAddCorner(frame4, 3)
                                     local frame5 = Instance.new("Frame")
                                     frame5.BackgroundColor3 = Color3.fromRGB(255, 255, 240)
                                     frame5.BackgroundTransparency = 0.72
@@ -13626,6 +13626,7 @@ end
                                     frame5.Size = UDim2.new(1, -4, 0, 4)
                                     frame5.Position = UDim2.new(0, 2, 0, 2)
                                     frame5.Parent = frame4
+                                    frame5.Visible = false
                                     amousCleanAddCorner(frame5, 4)
                                     local conditionFlag28 = false
 
@@ -13635,7 +13636,7 @@ end
 
                                         TweenService:Create(frame4, TweenInfo.new(0.16), {
                                             BackgroundColor3 = conditionFlag28 and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(238, 238, 245),
-                                            Position = conditionFlag28 and UDim2.new(1, -16, 0.5, -6) or UDim2.new(0, 10, 0.5, -6),
+                                            Position = conditionFlag28 and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
                                         }):Play()
                                     end)
                                 end
@@ -13800,7 +13801,8 @@ end
                                     local temporaryValue93 = createTextButton(temporaryValue92, "<", 28)
                                     temporaryValue93.Name = "Minus"
                                     temporaryValue93.Font = Enum.Font.GothamBlack
-                                    temporaryValue93.Position = UDim2.new(1, -126, 0.5, -12)
+                                    temporaryValue93.Size = UDim2.new(0, 28, 0, 26)
+                                    temporaryValue93.Position = UDim2.new(1, -126, 0.5, -13)
                                     local textBox = Instance.new("TextBox", temporaryValue92)
                                     textBox.Name = "StepperValue"
                                     textBox.BackgroundColor3 = dataTable37.key
@@ -13811,15 +13813,16 @@ end
                                     textBox.TextColor3 = dataTable37.text
                                     textBox.TextSize = 12
                                     textBox.Font = Enum.Font.GothamBlack
-                                    textBox.Size = UDim2.new(0, 58, 0, 25)
-                                    textBox.Position = UDim2.new(1, -94, 0.5, -12)
+                                    textBox.Size = UDim2.new(0, 58, 0, 26)
+                                    textBox.Position = UDim2.new(1, -94, 0.5, -13)
                                     textBox.ZIndex = 31
                                     amousCleanAddCorner(textBox, 7)
                                     amousCleanAddGradientStroke(textBox, 1)
                                     local temporaryValue94 = createTextButton(temporaryValue92, ">", 28)
                                     temporaryValue94.Name = "Plus"
                                     temporaryValue94.Font = Enum.Font.GothamBlack
-                                    temporaryValue94.Position = UDim2.new(1, -40, 0.5, -16)
+                                    temporaryValue94.Size = UDim2.new(0, 28, 0, 26)
+                                    temporaryValue94.Position = UDim2.new(1, -32, 0.5, -13)
                                     local numericValue34 = math.clamp(tonumber(argumentValue3) or argumentValue4, argumentValue4, argumentValue5)
 
 
@@ -16743,7 +16746,7 @@ end
                                         if frame7 then
                                             TweenService:Create(frame7, TweenInfo.new(0.16), {
                                                 BackgroundColor3 = _G._AmousInvertUI and Color3.fromRGB(0, 0, 0) or conditionFlag29 and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(238, 238, 245),
-                                                Position = conditionFlag29 and UDim2.new(1, -16, 0.5, -6) or UDim2.new(0, 3, 0.5, -6),
+                                                Position = conditionFlag29 and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7),
                                             }):Play()
                                         end
 
@@ -20280,12 +20283,31 @@ end
                                         end
 
                                         task.delay(1, function()
-                                            for _, amousRemoveName in ipairs({ "Background Color", "Steal Bar Match", "ColorThemePicker", "Advanced Lagger Button", "Move Buttons" }) do
+                                            for _, amousRemoveName in ipairs({ "Background Color", "Steal Bar Match", "ColorThemePicker", "Advanced Lagger Button", "Move Buttons", "Intro", "Section_Interface" }) do
                                                 local amousRemoveRow = Settings and Settings:FindFirstChild(amousRemoveName)
 
                                                 if amousRemoveRow then
                                                     amousRemoveRow:Destroy()
                                                 end
+                                            end
+
+                                            local amousContent = frame2 and frame2:FindFirstChild("Content")
+                                            local amousUtilityPage = amousContent and amousContent:FindFirstChild("Utility")
+
+                                            if amousUtilityPage then
+                                                for _, amousSkinRowName in ipairs({ "Section_*** Skin", "*** Skin", "Skin Gallery" }) do
+                                                    local amousSkinRow = amousUtilityPage:FindFirstChild(amousSkinRowName)
+
+                                                    if amousSkinRow then
+                                                        amousSkinRow:Destroy()
+                                                    end
+                                                end
+                                            end
+
+                                            local amousSkinGalleryGui = screenGui and screenGui:FindFirstChild("AmousSkinGallery")
+
+                                            if amousSkinGalleryGui then
+                                                amousSkinGalleryGui:Destroy()
                                             end
                                         end)
 
@@ -20707,7 +20729,7 @@ end
                                     helperFunction94("Reset Buttons", 37)
                                     helperFunction94("Section_UI Scale", 40)
                                     helperFunction94("UI Scale", 41)
-                                    helperFunction94("Steal Bar Size", 70)
+                                    helperFunction94("Steal Bar Size", 36)
                                     helperFunction94("Section_Interface", 50)
                                     helperFunction94("Intro Song", 15)
                                     helperFunction94("Intro", 52)
