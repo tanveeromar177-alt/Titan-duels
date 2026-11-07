@@ -13043,7 +13043,7 @@ end
                             frame2.BackgroundTransparency = 1
                             frame2.BorderSizePixel = 0
                             frame2.AnchorPoint = Vector2.new(0, 0.5)
-                            frame2.Size = UDim2.new(0, 356, 0, 536)
+                            frame2.Size = UDim2.new(0, 476, 0, 536)
                             local udim2
                             udim2 = UDim2.new(0, 20, 0.5, 0)
                             frame2.Position = udim2
@@ -13298,15 +13298,15 @@ end
                                 local instance6 = Instance.new("Frame")
                                 instance6.Name = "Content"
                                 instance6.BackgroundTransparency = 1
-                                instance6.Position = UDim2.new(0, 8, 0, 112)
-                                instance6.Size = UDim2.new(1, -26, 1, -164)
+                                instance6.Position = UDim2.new(0, 128, 0, 112)
+                                instance6.Size = UDim2.new(1, -146, 1, -124)
                                 instance6.ZIndex = 3
                                 instance6.Parent = frame2
                                 instance5 = Instance.new("Frame")
                                 instance5.Name = "Tabs"
                                 instance5.BackgroundTransparency = 1
-                                instance5.Position = UDim2.new(0, 8, 1, -44)
-                                instance5.Size = UDim2.new(1, -26, 0, 34)
+                                instance5.Position = UDim2.new(0, 8, 0, 112)
+                                instance5.Size = UDim2.new(0, 112, 1, -124)
                                 instance5.ZIndex = 3
                                 instance5.Parent = frame2
                                 _G._AmousIdleFadeTargets = { textButton, instance6, instance5 }
@@ -13376,8 +13376,8 @@ end
                                 end)
 
                                 local uiListLayout = Instance.new("UIListLayout")
-                                uiListLayout.FillDirection = Enum.FillDirection.Horizontal
-                                uiListLayout.Padding = UDim.new(0, 5)
+                                uiListLayout.FillDirection = Enum.FillDirection.Vertical
+                                uiListLayout.Padding = UDim.new(0, 6)
                                 uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
                                 uiListLayout.Parent = instance5
                                 dataTable39 = {}
@@ -15808,480 +15808,6 @@ end
                             end
 
                             createTextLabel(Settings, "Interface")
-                            local open
-
-                            do
-                                local introSong = amousCleanCreateSettingRow(Settings, "Intro Song")
-                                local frame4 = Instance.new("Frame")
-                                frame4.Name = "IntroSongPill"
-                                frame4.Size = UDim2.new(0, 126, 0, 26)
-                                frame4.Position = UDim2.new(1, -132, 0.5, -8)
-                                frame4.ZIndex = 25
-                                frame4.Parent = introSong
-                                createUIStroke(frame4)
-                                local temporaryValue93 = createTextButton(introSong, "<", 28)
-                                temporaryValue93.Name = "IntroSongPrevious"
-                                temporaryValue93.Font = Enum.Font.GothamBlack
-                                temporaryValue93.Parent = frame4
-                                amousCleanStyleTextButton(temporaryValue93, UDim2.new(0, 28, 1, 0), UDim2.new(0, 2, 0, 0))
-                                open = createTextButton(introSong, "OPEN", 58)
-                                open.Name = "IntroSongButton"
-                                open.TextSize = 10
-                                open.Parent = frame4
-                                local udim22 = UDim2.new
-                                amousCleanStyleTextButton(open, UDim2.new(0, 62, 1, 0), udim22(0, 31, 0, 0))
-                                local temporaryValue94 = createTextButton(introSong, ">", 28)
-                                temporaryValue94.Name = "IntroSongNext"
-                                temporaryValue94.Font = Enum.Font.GothamBlack
-                                temporaryValue94.Parent = frame4
-                                local udim23 = UDim2.new
-                                amousCleanStyleTextButton(temporaryValue94, UDim2.new(0, 28, 1, 0), udim23(1, -30, 0, 0))
-                                temporaryValue93.Visible = false
-                                temporaryValue94.Visible = false
-
-
-                                local function amousCleanApplyBackground()
-                                    local temporaryValue95 = ipairs
-                                    local SoundService = game:GetService("SoundService")
-
-                                    for _, child in temporaryValue95(SoundService:GetChildren()) do
-                                        if child:IsA("Sound") and child.Name == "AmousIntroMusic" then
-                                            child:Destroy()
-                                        end
-                                    end
-
-                                    amousCleanPlayIntroMusic()
-                                end
-
-
-                                local function amousCleanUpdateBackgroundSelection(argumentValue)
-                                    _G._AmousIntroSongIndex = (_G._AmousIntroSongIndex - 1 + argumentValue) % #introSongs + 1
-                                    _G._AmousIntroSongLocked = true
-                                    open.Text = "OPEN"
-
-                                    if _G._AmousRefreshSongGallery then
-                                        _G._AmousRefreshSongGallery()
-                                    end
-
-                                    task.spawn(function()
-                                        pcall(helperFunction29)
-                                    end)
-
-                                    amousCleanApplyBackground()
-                                end
-
-                                temporaryValue93.Activated:Connect(function()
-                                    amousCleanUpdateBackgroundSelection(-1)
-                                end)
-
-                                temporaryValue94.Activated:Connect(function()
-                                    amousCleanUpdateBackgroundSelection(1)
-                                end)
-
-
-                                local function amousCleanApplyButtonBackground()
-                                    local conditionFlag29 = amousSafeModeEnabled == true
-                                    local amousSongGallery = screenGui:FindFirstChild("AmousSongGallery")
-
-                                    if amousSongGallery then
-                                        amousSongGallery:Destroy()
-                                    end
-
-                                    local canvasGroup = Instance.new("CanvasGroup")
-                                    canvasGroup.Name = "AmousSongGallery"
-                                    canvasGroup.AnchorPoint = Vector2.new(0.5, 0.5)
-                                    canvasGroup.Position = UDim2.fromScale(0.5, 0.5)
-                                    canvasGroup.Size = conditionFlag29 and UDim2.new(0, 280, 0, 300) or UDim2.new(0, 360, 0, 350)
-                                    canvasGroup.BackgroundColor3 = dataTable37.panel
-                                    canvasGroup.BorderSizePixel = 0
-                                    canvasGroup.Visible = false
-                                    canvasGroup.ZIndex = 120
-                                    canvasGroup.Parent = screenGui
-                                    amousCleanAddCorner(canvasGroup, 14)
-                                    local instance6 = Instance.new("UIGradient")
-                                    instance6.Color = ColorSequence.new(dataTable37.panel, dataTable37.row)
-                                    instance6.Rotation = 35
-                                    instance6.Parent = canvasGroup
-                                    local frame5 = Instance.new("Frame")
-                                    frame5.BackgroundTransparency = 1
-                                    frame5.Size = UDim2.new(1, -28, 0, 34)
-                                    frame5.Position = UDim2.new(0, 20, 0, 7)
-                                    frame5.Active = true
-                                    frame5.ZIndex = 131
-                                    frame5.Parent = canvasGroup
-                                    local temporaryValue95 = amousCleanCreateTextLabel
-                                    local numericValue34 = conditionFlag29 and 15 or 17
-                                    local gothamBlack = Enum.Font.GothamBlack
-                                    local text = dataTable37.text
-                                    local amousMusic = temporaryValue95(frame5, "*** MUSIC", numericValue34, UDim2.new(0, 0, 0, 3), gothamBlack, text)
-                                    amousMusic.ZIndex = 132
-                                    local temporaryValue96 = dataTable38.gallery(canvasGroup, frame5, amousMusic)
-                                    local temporaryValue97 = createTextButton(frame5, "×", 25)
-                                    temporaryValue97.Name = "CloseSongGallery"
-                                    temporaryValue97.TextSize = 20
-                                    temporaryValue97.Position = UDim2.new(1, -32, 0, 4)
-                                    temporaryValue97.BackgroundTransparency = 1
-                                    temporaryValue97.ZIndex = 133
-                                    local uiStroke = temporaryValue97:FindFirstChildOfClass("UIStroke")
-
-                                    if uiStroke then
-                                        uiStroke:Destroy()
-                                    end
-
-                                    local conditionFlag30 = false
-                                    local temporaryValue98 = nil
-                                    local temporaryValue99 = nil
-                                    local temporaryValue100 = nil
-
-                                    frame5.InputBegan:Connect(function(input)
-                                        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then
-                                            return
-                                        end
-                                        local position2 = input.Position
-                                        local position3 = canvasGroup.Position
-                                        conditionFlag30 = true
-                                        temporaryValue98 = position2
-                                        temporaryValue99 = position3
-                                        temporaryValue100 = input
-
-                                        input.Changed:Connect(function()
-                                            if input.UserInputState == Enum.UserInputState.End then
-                                                conditionFlag30 = false
-                                            end
-                                        end)
-                                    end)
-
-                                    frame5.InputChanged:Connect(function(input)
-                                        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-                                            temporaryValue100 = input
-                                        end
-                                    end)
-
-                                    UserInputService.InputChanged:Connect(function(input)
-                                        if conditionFlag30 and input == temporaryValue100 then
-                                            local numericValue35 = input.Position - temporaryValue98
-                                            canvasGroup.Position = UDim2.new(temporaryValue99.X.Scale, temporaryValue99.X.Offset + numericValue35.X, temporaryValue99.Y.Scale, temporaryValue99.Y.Offset + numericValue35.Y)
-                                        end
-                                    end)
-
-                                    local numericValue35 = conditionFlag29 and 150 or 184
-                                    local frame6 = Instance.new("Frame")
-                                    frame6.Name = "AlbumDisplay"
-                                    frame6.BackgroundTransparency = 1
-                                    frame6.Position = UDim2.new(0, 20, 0, 43)
-                                    frame6.Size = UDim2.new(1, -28, 0, numericValue35)
-                                    frame6.ZIndex = 131
-                                    frame6.Parent = canvasGroup
-                                    local numericValue36 = conditionFlag29 and 100 or 128
-                                    local frame7 = Instance.new("Frame")
-                                    frame7.Name = "SpinningRecord"
-                                    frame7.AnchorPoint = Vector2.new(0.5, 0.5)
-                                    frame7.Position = UDim2.new(0.5, conditionFlag29 and 21 or 27, 0.5, -7)
-                                    frame7.Size = UDim2.fromOffset(numericValue36, numericValue36)
-                                    frame7.BackgroundColor3 = Color3.fromRGB(10, 5, 7)
-                                    frame7.BorderSizePixel = 0
-                                    frame7.ClipsDescendants = true
-                                    frame7.ZIndex = 132
-                                    frame7.Parent = frame6
-                                    amousCleanAddCorner(frame7, 999)
-                                    local uiGradient = Instance.new("UIGradient")
-                                    local colorSequence = ColorSequence.new
-                                    local dataTable44 = {}
-                                    local temporaryValue101 = ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 8, 10))
-                                    local temporaryValue102 = ColorSequenceKeypoint.new(0.35, Color3.fromRGB(44, 45, 48))
-                                    local temporaryValue103 = ColorSequenceKeypoint.new(0.5, Color3.fromRGB(12, 12, 15))
-                                    local temporaryValue104 = ColorSequenceKeypoint.new(0.82, Color3.fromRGB(40, 32, 36))
-                                    local new = ColorSequenceKeypoint.new
-                                    local color2 = Color3.fromRGB
-                                    local temporaryValue105 = 12
-                                    dataTable44[1] = temporaryValue101
-                                    dataTable44[2] = temporaryValue102
-                                    dataTable44[3] = temporaryValue103
-                                    dataTable44[4] = temporaryValue104
-
-                                    do
-                                        local values = table.pack(new(1, color2(8, 8, temporaryValue105)))
-                                        table.move(values, 1, values.n, 5, dataTable44)
-                                    end
-
-                                    uiGradient.Color = colorSequence(dataTable44)
-                                    uiGradient.Rotation = 18
-                                    uiGradient.Parent = frame7
-                                    local uiStroke2 = Instance.new("UIStroke")
-                                    uiStroke2.Color = Color3.fromRGB(66, 66, 72)
-                                    uiStroke2.Thickness = conditionFlag29 and 1 or 2
-                                    uiStroke2.Transparency = 0.2
-                                    uiStroke2.Parent = frame7
-
-                                    for i, temporaryValue106 in ipairs({ 0.72, 0.48 }) do
-                                        local frame8 = Instance.new("Frame")
-                                        frame8.Name = "Groove" .. i
-                                        frame8.AnchorPoint = Vector2.new(0.5, 0.5)
-                                        frame8.Position = UDim2.fromScale(0.5, 0.5)
-                                        frame8.Size = UDim2.fromScale(temporaryValue106, temporaryValue106)
-                                        frame8.BackgroundTransparency = 1
-                                        frame8.BorderSizePixel = 0
-                                        frame8.ZIndex = 133
-                                        frame8.Parent = frame7
-                                        amousCleanAddCorner(frame8, 999)
-                                        local uiStroke3 = Instance.new("UIStroke")
-                                        uiStroke3.Color = Color3.fromRGB(90, 90, 96)
-                                        uiStroke3.Thickness = 1
-                                        uiStroke3.Transparency = 0.58
-                                        uiStroke3.Parent = frame8
-                                    end
-
-                                    local instance7 = Instance.new("Frame")
-                                    instance7.AnchorPoint = Vector2.new(0.5, 0.5)
-                                    instance7.Position = UDim2.fromScale(0.5, 0.5)
-                                    instance7.Size = UDim2.fromScale(0.25, 0.25)
-                                    instance7.BackgroundColor3 = Color3.fromRGB(240, 255, 255)
-                                    instance7.BackgroundTransparency = 0
-                                    instance7.BorderSizePixel = 0
-                                    instance7.ZIndex = 134
-                                    instance7.Parent = frame7
-                                    amousCleanAddCorner(instance7, 999)
-                                    local frame8 = Instance.new("Frame")
-                                    frame8.AnchorPoint = Vector2.new(0.5, 0.5)
-                                    frame8.Position = UDim2.fromScale(0.5, 0.5)
-                                    frame8.Size = UDim2.fromOffset(conditionFlag29 and 5 or 7, conditionFlag29 and 5 or 7)
-                                    frame8.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-                                    frame8.BorderSizePixel = 0
-                                    frame8.ZIndex = 135
-                                    frame8.Parent = frame7
-                                    amousCleanAddCorner(frame8, 999)
-                                    local numericValue37 = conditionFlag29 and 112 or 142
-                                    local frame9 = Instance.new("Frame")
-                                    frame9.AnchorPoint = Vector2.new(0.5, 0.5)
-                                    frame9.Position = UDim2.new(0.5, conditionFlag29 and -31 or -35, 0.5, -3)
-                                    frame9.Size = UDim2.fromOffset(numericValue37 + 10, numericValue37 + 5)
-                                    frame9.Rotation = -5
-                                    frame9.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                                    frame9.BackgroundTransparency = 0.48
-                                    frame9.BorderSizePixel = 0
-                                    frame9.ZIndex = 133
-                                    frame9.Parent = frame6
-                                    amousCleanAddCorner(frame9, 7)
-                                    local frame10 = Instance.new("Frame")
-                                    frame10.Name = "RecordSleeve"
-                                    frame10.AnchorPoint = Vector2.new(0.5, 0.5)
-                                    frame10.Position = UDim2.new(0.5, conditionFlag29 and -25 or -44, 0.5, -7)
-                                    frame10.Size = UDim2.fromOffset(numericValue37, numericValue37)
-                                    frame10.Rotation = -5
-                                    frame10.BackgroundColor3 = dataTable37.row
-                                    frame10.BorderSizePixel = 0
-                                    frame10.ZIndex = 134
-                                    frame10.Parent = frame6
-                                    amousCleanAddCorner(frame10, 7)
-                                    local imageLabel = Instance.new("ImageLabel")
-                                    imageLabel.Name = "SelectedSongCover"
-                                    imageLabel.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-                                    imageLabel.BackgroundTransparency = 0
-                                    imageLabel.BorderSizePixel = 0
-                                    imageLabel.Position = UDim2.new(0, 0, 0, 0)
-                                    imageLabel.Size = UDim2.new(1, 0, 1, 0)
-                                    imageLabel.ScaleType = Enum.ScaleType.Crop
-                                    imageLabel.ZIndex = 135
-                                    imageLabel.Parent = frame10
-                                    amousCleanAddCorner(imageLabel, 7)
-                                    local temporaryValue106 = amousCleanCreateTextLabel
-                                    local numericValue38 = conditionFlag29 and 10 or 12
-                                    local gothamBold = Enum.Font.GothamBold
-                                    local text2 = dataTable37.text
-                                    local center = Enum.TextXAlignment.Center
-                                    local temporaryValue107 = temporaryValue106(frame6, "", numericValue38, UDim2.new(0, 0, 1, -18), gothamBold, text2, center)
-                                    temporaryValue107.Size = UDim2.new(1, 0, 0, 16)
-                                    temporaryValue107.ZIndex = 136
-                                    temporaryValue107.TextColor3 = Color3.fromRGB(240, 240, 240)
-
-                                    for _, descendant in ipairs(frame6:GetDescendants()) do
-                                        descendant:SetAttribute("_AmousNoInvert", true)
-                                    end
-
-                                    local numericValue39 = 47 + numericValue35
-                                    local scrollingFrame = Instance.new("ScrollingFrame")
-                                    scrollingFrame.Name = "SongList"
-                                    scrollingFrame.BackgroundTransparency = 1
-                                    scrollingFrame.BorderSizePixel = 0
-                                    scrollingFrame.Position = UDim2.new(0, 14, 0, numericValue39)
-                                    scrollingFrame.Size = UDim2.new(1, -28, 1, -(numericValue39 + 12))
-                                    scrollingFrame.CanvasSize = UDim2.new()
-                                    scrollingFrame.ScrollBarThickness = 2
-                                    scrollingFrame.ScrollBarImageTransparency = 0.22
-                                    scrollingFrame.ScrollBarImageColor3 = dataTable37.accent
-                                    scrollingFrame.ZIndex = 131
-                                    scrollingFrame.Parent = canvasGroup
-                                    local uiListLayout = Instance.new("UIListLayout")
-                                    uiListLayout.Padding = UDim.new(0, 4)
-                                    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-                                    uiListLayout.Parent = scrollingFrame
-
-                                    uiListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                                        scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, uiListLayout.AbsoluteContentSize.Y + 2)
-                                    end)
-
-                                    local dataTable45 = {}
-
-
-                                    local function amousRefreshSongGallery()
-                                        local clamp = math.clamp
-                                        local floor2 = math.floor
-                                        local num = tonumber(_G._AmousIntroSongIndex) or amousIntroSongIndex
-                                        local numericValue40 = #introSongs
-                                        local temporaryValue108 = clamp(floor2(num), 1, numericValue40)
-                                        local temporaryValue109 = introSongs[temporaryValue108]
-
-                                        if imageLabel.Image ~= (temporaryValue109.cover or "") then
-                                            imageLabel.Image = temporaryValue109.cover or ""
-                                            imageLabel.ImageTransparency = 0.5
-                                            dataTable38.tween(imageLabel, "cover", 0.25, { ImageTransparency = 0 })
-                                        end
-
-                                        temporaryValue107.Text = temporaryValue109.name
-                                        open.Text = "OPEN"
-
-                                        for i, temporaryValue110 in ipairs(dataTable45) do
-                                            local visible = i == temporaryValue108
-                                            temporaryValue110.button:SetAttribute("Selected", visible)
-
-                                            dataTable38.tween(temporaryValue110.button, "surface", 0.18, {
-                                                BackgroundColor3 = visible and Color3.fromRGB(28, 28, 28) or Color3.fromRGB(15, 15, 15),
-                                                BackgroundTransparency = 0,
-                                            })
-
-                                            temporaryValue110.stroke.Color = Color3.fromRGB(255, 240, 255)
-                                            temporaryValue110.stroke.Thickness = 1
-                                            dataTable38.tween(temporaryValue110.stroke, "selection", 0.18, { Transparency = visible and 0.78 or 1 })
-                                            temporaryValue110.name.TextColor3 = visible and Color3.fromRGB(255, 240, 255) or Color3.fromRGB(190, 190, 190)
-                                            temporaryValue110.status.Visible = visible
-                                            temporaryValue110.mark.Visible = visible
-                                        end
-                                    end
-
-                                    _G._AmousRefreshSongGallery = amousRefreshSongGallery
-
-                                    for i, temporaryValue108 in ipairs(introSongs) do
-                                        local textButton2 = Instance.new("TextButton")
-                                        textButton2.Name = "SongChoice" .. i
-                                        textButton2.LayoutOrder = i
-                                        textButton2.Size = UDim2.new(1, -4, 0, conditionFlag29 and 25 or 28)
-                                        textButton2.BackgroundColor3 = dataTable37.row
-                                        textButton2.BackgroundTransparency = 0.3
-                                        textButton2.BorderSizePixel = 0
-                                        textButton2.Text = ""
-                                        textButton2.AutoButtonColor = false
-                                        textButton2.ZIndex = 132
-                                        textButton2.Parent = scrollingFrame
-                                        amousCleanAddCorner(textButton2, 7)
-                                        local uiStroke3 = Instance.new("UIStroke")
-                                        uiStroke3.Color = Color3.fromRGB(70, 70, 78)
-                                        uiStroke3.Transparency = 0.2
-                                        uiStroke3.Parent = textButton2
-                                        local gothamBold2 = Enum.Font.GothamBold
-                                        local muted = dataTable37.muted
-                                        local left = Enum.TextXAlignment.Left
-                                        local temporaryValue109 = amousCleanCreateTextLabel(textButton2, string.format("%02d", i), 9, UDim2.new(0, 6, 0, 0), gothamBold2, muted, left)
-                                        temporaryValue109.Size = UDim2.new(0, 28, 1, 0)
-                                        temporaryValue109.TextYAlignment = Enum.TextYAlignment.Center
-                                        temporaryValue109.ZIndex = 133
-                                        local temporaryValue110 = amousCleanCreateTextLabel
-                                        local name = temporaryValue108.name
-                                        local numericValue40 = conditionFlag29 and 9 or 10
-                                        local gothamMedium = Enum.Font.GothamMedium
-                                        local text3 = dataTable37.text
-                                        local left2 = Enum.TextXAlignment.Left
-                                        local temporaryValue111 = temporaryValue110(textButton2, name, numericValue40, UDim2.new(0, 39, 0, 0), gothamMedium, text3, left2)
-                                        temporaryValue111.Size = UDim2.new(1, -104, 1, 0)
-                                        temporaryValue111.TextYAlignment = Enum.TextYAlignment.Center
-                                        temporaryValue111.ZIndex = 133
-                                        local gothamMedium2 = Enum.Font.GothamMedium
-                                        local right = Enum.TextXAlignment.Right
-                                        local selected = amousCleanCreateTextLabel(textButton2, "SELECTED", 8, UDim2.new(1, -62, 0, 0), gothamMedium2, Color3.fromRGB(170, 170, 170), right)
-                                        selected.Size = UDim2.new(0, 52, 1, 0)
-                                        selected.ZIndex = 133
-                                        local instance8 = Instance.new("Frame", textButton2)
-                                        instance8.Name = "SelectedMarker"
-                                        instance8.Size = UDim2.new(0, 2, 0, 16)
-                                        instance8.Position = UDim2.new(0, 0, 0.5, -6)
-                                        instance8.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                                        instance8.BorderSizePixel = 0
-                                        instance8.ZIndex = 133
-                                        amousCleanAddCorner(instance8, 1)
-
-                                        for _, temporaryValue112 in ipairs({ textButton2, uiStroke3, temporaryValue109, temporaryValue111, selected, instance8 }) do
-                                            temporaryValue112:SetAttribute("_NoAmousTheme", true)
-                                        end
-
-                                        textButton2.MouseEnter:Connect(function()
-                                            dataTable38.tween(textButton2, "surface", 0.14, { BackgroundColor3 = Color3.fromRGB(34, 34, 34) })
-                                        end)
-
-                                        textButton2.MouseLeave:Connect(function()
-                                            dataTable38.tween(textButton2, "surface", 0.14, {
-                                                BackgroundColor3 = textButton2:GetAttribute("Selected") and Color3.fromRGB(28, 28, 28) or Color3.fromRGB(15, 26, 15),
-                                            })
-                                        end)
-
-                                        dataTable45[i] = { button = textButton2, stroke = uiStroke3, name = temporaryValue111, status = selected, mark = instance8 }
-
-                                        textButton2.Activated:Connect(function()
-                                            _G._AmousIntroSongIndex = i
-                                            _G._AmousIntroSongLocked = true
-                                            frame10.Rotation = -7
-                                            frame9.Rotation = -7
-                                            amousRefreshSongGallery()
-                                            dataTable38.tween(frame10, "tilt", 0.28, { Rotation = -10 })
-                                            dataTable38.tween(frame9, "tilt", 0.28, { Rotation = -5 })
-
-                                            task.spawn(function()
-                                                pcall(helperFunction29)
-                                            end)
-
-                                            amousCleanApplyBackground()
-                                        end)
-                                    end
-
-                                    local rotation = 0
-                                    local connection2 = nil
-
-                                    connection2 = RunService.RenderStepped:Connect(function(deltaTime)
-                                        if not canvasGroup.Parent then
-                                            connection2:Disconnect()
-                                            return
-                                        end
-
-                                        if not canvasGroup.Visible then
-                                            return
-                                        end
-                                        rotation = (rotation + deltaTime * 72) % 360
-                                        frame7.Rotation = rotation
-                                    end)
-
-                                    open.Activated:Connect(function()
-                                        amousRefreshSongGallery()
-                                        temporaryValue96(true)
-
-                                        task.defer(function()
-                                            if not canvasGroup.Parent then
-                                                return
-                                            end
-                                            local temporaryValue108 = dataTable45[_G._AmousIntroSongIndex]
-
-                                            if temporaryValue108 then
-                                                scrollingFrame.CanvasPosition = Vector2.new(0, math.clamp(temporaryValue108.button.AbsolutePosition.Y - scrollingFrame.AbsolutePosition.Y + scrollingFrame.CanvasPosition.Y, 0, math.max(0, uiListLayout.AbsoluteContentSize.Y - scrollingFrame.AbsoluteSize.Y)))
-                                            end
-                                        end)
-                                    end)
-
-                                    temporaryValue97.Activated:Connect(function()
-                                        temporaryValue96(false)
-                                    end)
-
-                                    amousRefreshSongGallery()
-                                end
-
-                                amousCleanApplyButtonBackground()
-                            end
 
                             amousCleanCreateSettingRow(Settings, "Intro", { toggle = true })
                             local dataTable44
@@ -16580,6 +16106,12 @@ end
                                 createTextButton3(">", false).Activated:Connect(function()
                                     helperFunction73(1)
                                 end)
+
+                                do
+                                    local amousBgSection = Settings:FindFirstChild("Section_Background")
+                                    if amousBgSection then amousBgSection:Destroy() end
+                                    if frame4 then frame4:Destroy() end
+                                end
 
                                 local dataTable47 = {
                                     "DEFAULT",
@@ -16928,6 +16460,11 @@ end
                                     helperFunction75(1)
                                 end)
 
+                                do
+                                    if buttonsImage then buttonsImage:Destroy() end
+                                    if frame5 then frame5:Destroy() end
+                                end
+
                                 local textLabel = moveButtons:FindFirstChildOfClass("TextLabel")
 
                                 createTextButton2(moveButtons, function()
@@ -17018,21 +16555,33 @@ end
                                     Settings = "SETTINGS",
                                 }
 
+                                local tabIcons = {
+                                    Movement = "🏃",
+                                    Combat = "⚔️",
+                                    Utility = "👁️",
+                                    Settings = "⚙️",
+                                    Keybinds = "⌨️",
+                                }
+
                                 for i, temporaryValue94 in ipairs({ "Movement", "Combat", "Utility", "Settings", "Keybinds" }) do
                                     local textButton2 = Instance.new("TextButton")
                                     textButton2.Name = temporaryValue94
                                     textButton2.LayoutOrder = i
                                     textButton2.BackgroundColor3 = Color3.fromRGB(240, 255, 240)
                                     textButton2.BackgroundTransparency = 1
-                                    textButton2.Text = string.upper(dataTable49[temporaryValue94] or temporaryValue94)
+                                    textButton2.Text = (tabIcons[temporaryValue94] and (tabIcons[temporaryValue94] .. "  ") or "") .. string.upper(dataTable49[temporaryValue94] or temporaryValue94)
                                     textButton2.TextColor3 = dataTable37.muted
                                     textButton2.TextSize = 18
                                     textButton2.TextScaled = true
                                     textButton2.Font = Enum.Font.GothamBlack
-                                    textButton2.Size = UDim2.new(0.2, -5, 1, 0)
+                                    textButton2.Size = UDim2.new(1, 0, 0, 40)
                                     textButton2.AutoButtonColor = false
                                     textButton2.ZIndex = 4
                                     textButton2.Parent = instance5
+                                    textButton2.TextXAlignment = Enum.TextXAlignment.Left
+                                    local tabPadding = Instance.new("UIPadding", textButton2)
+                                    tabPadding.PaddingLeft = UDim.new(0, 10)
+                                    tabPadding.PaddingRight = UDim.new(0, 6)
                                     local uiTextSizeConstraint = Instance.new("UITextSizeConstraint", textButton2)
                                     uiTextSizeConstraint.MinTextSize = 6
                                     uiTextSizeConstraint.MaxTextSize = 12
@@ -17066,18 +16615,18 @@ end
                                         end
 
                                         local temporaryValue95 = position
-                                        frame2.Size = UDim2.new(0, 356, 0, 536)
+                                        frame2.Size = UDim2.new(0, 476, 0, 536)
                                         frame2.BackgroundTransparency = _G._AmousInvertUI and 0.1 or 0.03
 
                                         if argumentValue2 then
                                             frame2.Position = temporaryValue95
                                         else
-                                            frame2.Position = UDim2.new(temporaryValue95.X.Scale, -400, temporaryValue95.Y.Scale, temporaryValue95.Y.Offset)
+                                            frame2.Position = UDim2.new(temporaryValue95.X.Scale, -520, temporaryValue95.Y.Scale, temporaryValue95.Y.Offset)
                                             TweenService:Create(frame2, TweenInfo.new(0.32, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = temporaryValue95 }):Play()
                                         end
                                     else
                                         position = frame2.Position
-                                        local tween = TweenService:Create(frame2, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(position.X.Scale, -400, position.Y.Scale, position.Y.Offset) })
+                                        local tween = TweenService:Create(frame2, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = UDim2.new(position.X.Scale, -520, position.Y.Scale, position.Y.Offset) })
                                         tween:Play()
 
                                         tween.Completed:Connect(function()
@@ -20990,7 +20539,6 @@ end
                                             amousCleanApplyStealBarScale()
                                             _G._AmousIntroSongLocked = false
                                             _G._AmousIntroSongIndex = amousIntroSongIndex
-                                            open.Text = "OPEN"
 
                                             if _G._AmousRefreshSongGallery then
                                                 _G._AmousRefreshSongGallery()
