@@ -498,6 +498,88 @@ end
                                             end)
                                         end)
 
+                                        _G._AmousToggleWhitelist = {
+                                            ["Auto Carry Mode"] = true,
+                                            ["Infinite Jump"] = true,
+                                            ["Anti Ragdoll"] = true,
+                                            ["Anti Die"] = true,
+                                            ["Bodylock"] = true,
+                                            ["Ragdoll Steal"] = true,
+                                            ["Auto Steal"] = true,
+                                            ["Auto Swing"] = true,
+                                            ["Mirror TP"] = true,
+                                            ["Auto TP Down"] = true,
+                                            ["Bat Counter"] = true,
+                                            ["Medusa Counter"] = true,
+                                            ["ESP"] = true,
+                                            ["Show Tracer"] = true,
+                                            ["Ragdoll Countdown"] = true,
+                                            ["Stretch Res"] = true,
+                                            ["Anti-Lag"] = true,
+                                            ["Potato Graphics"] = true,
+                                            ["FOV Change"] = true,
+                                        }
+
+                                        _G._AmousToggleMem = _G._AmousToggleMem or {}
+
+                                        _G._AmousToggleFileName = function()
+                                            local lp = game:GetService("Players").LocalPlayer
+                                            return "AmousToggles_" .. tostring(lp and lp.UserId or 0) .. ".json"
+                                        end
+
+                                        _G._AmousToggleLoad = function()
+                                            local merged = {}
+                                            pcall(function()
+                                                local reader = readfile or (syn and syn.readfile)
+                                                if type(reader) ~= "function" then
+                                                    return
+                                                end
+                                                local okRead, raw = pcall(reader, _G._AmousToggleFileName())
+                                                if not okRead or type(raw) ~= "string" or #raw < 2 then
+                                                    return
+                                                end
+                                                local okDecode, data = pcall(function()
+                                                    return game:GetService("HttpService"):JSONDecode(raw)
+                                                end)
+                                                if okDecode and type(data) == "table" and type(data.toggles) == "table" then
+                                                    for name, value in pairs(data.toggles) do
+                                                        if type(name) == "string" and type(value) == "boolean" then
+                                                            merged[name] = value
+                                                        end
+                                                    end
+                                                end
+                                            end)
+                                            if not _G._AmousToggleLoaded then
+                                                for name, value in pairs(_G._AmousToggleMem) do
+                                                    merged[name] = value
+                                                end
+                                                _G._AmousToggleMem = merged
+                                                _G._AmousToggleLoaded = true
+                                            end
+                                            return _G._AmousToggleMem
+                                        end
+
+                                        _G._AmousToggleSave = function()
+                                            local writer = writefile or (syn and syn.writefile)
+                                            if type(writer) ~= "function" then
+                                                if _G._AmousNotify then
+                                                    _G._AmousNotify("Toggle save failed: executor has no writefile")
+                                                end
+                                                return
+                                            end
+                                            local okWrite, err = pcall(function()
+                                                local lp = game:GetService("Players").LocalPlayer
+                                                writer(_G._AmousToggleFileName(), game:GetService("HttpService"):JSONEncode({
+                                                    version = 1,
+                                                    userId = lp and lp.UserId or 0,
+                                                    toggles = _G._AmousToggleMem,
+                                                }))
+                                            end)
+                                            if not okWrite and _G._AmousNotify then
+                                                _G._AmousNotify("Toggle save failed: " .. tostring(err))
+                                            end
+                                        end
+
                                         _G._AmousNotify = function(text)
                                             if tick() - (_G._AmousLastNotifyAt or 0) < 2 then
                                                 return
@@ -16829,6 +16911,18 @@ end
                                     local function helperFunction79(argumentValue4, argumentValue5)
                                         local conditionFlag30 = argumentValue4 ~= conditionFlag29
                                         conditionFlag29 = argumentValue4
+
+                                        if not argumentValue5 and _G._AmousToggleWhitelist and _G._AmousToggleWhitelist[argumentValue2] then
+                                            if not _G._AmousToggleLoaded and _G._AmousToggleLoad then
+                                                pcall(_G._AmousToggleLoad)
+                                            end
+
+                                            _G._AmousToggleMem[argumentValue2] = argumentValue4 == true
+
+                                            if _G._AmousToggleSave then
+                                                task.defer(_G._AmousToggleSave)
+                                            end
+                                        end
                                         local color2 = dataTable37.accent.R > 0.98 and dataTable37.accent.G > 0.98 and dataTable37.accent.B > 0.98 and Color3.fromRGB(0, 0, 0) or dataTable37.accent
 
                                         if frame6 then
@@ -19808,6 +19902,33 @@ end
 
                                 _G._AmousResyncToggles = amousResyncToggleVisuals
 
+                                local function amousRestoreSavedToggles()
+                                    local saved = _G._AmousToggleLoad and _G._AmousToggleLoad() or {}
+                                    amousResyncToggleVisuals()
+
+                                    local restored, total = 0, 0
+
+                                    for name, value in pairs(saved) do
+                                        total += 1
+                                        local handler = handlers[name]
+
+                                        if handler and _G._AmousToggleWhitelist and _G._AmousToggleWhitelist[name] then
+                                            pcall(handler, value, false)
+                                            restored += 1
+                                        end
+                                    end
+
+                                    if _G._AmousNotify then
+                                        if total == 0 then
+                                            _G._AmousNotify("No saved toggles yet (toggle file empty or missing)")
+                                        else
+                                            _G._AmousNotify("Toggles restored: " .. tostring(restored) .. "/" .. tostring(total))
+                                        end
+                                    end
+                                end
+
+                                _G._AmousRestoreSavedToggles = amousRestoreSavedToggles
+
                                 task.delay(12, function()
                                     if _G._AmousSettingsReady ~= true and helperFunction42() then
                                         warn("[AmousDuels] boot restore did not finish in 12s; enabling saves anyway")
@@ -20290,6 +20411,7 @@ end
                                     amousSyncMobile()
                                     amousResyncToggleVisuals()
                                     task.delay(1.5, amousResyncToggleVisuals)
+                                    task.delay(2, amousRestoreSavedToggles)
                                     task.delay(4, amousResyncToggleVisuals)
                                     end) then
                                         _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
