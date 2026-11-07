@@ -453,6 +453,51 @@ end
                                             end)
                                         end
 
+                                        _G._AmousUiSoundIds = {
+                                            toggle = "rbxassetid://70674035589235",
+                                            gui = "rbxassetid://98266757998484",
+                                        }
+
+                                        _G._AmousPlayUiSound = function(kind)
+                                            local soundId = _G._AmousUiSoundIds[kind]
+                                            if not soundId then
+                                                return
+                                            end
+
+                                            pcall(function()
+                                                local sound = Instance.new("Sound")
+                                                sound.Name = "AmousUiSound"
+                                                sound.SoundId = soundId
+                                                sound.Volume = 1
+                                                sound.Looped = false
+                                                sound.Parent = game:GetService("SoundService")
+                                                sound.Ended:Connect(function()
+                                                    sound:Destroy()
+                                                end)
+                                                sound:Play()
+                                                task.delay(10, function()
+                                                    if sound.Parent then
+                                                        sound:Destroy()
+                                                    end
+                                                end)
+                                            end)
+                                        end
+
+                                        task.spawn(function()
+                                            pcall(function()
+                                                local preload = {}
+                                                for _, soundId in pairs(_G._AmousUiSoundIds) do
+                                                    local sound = Instance.new("Sound")
+                                                    sound.SoundId = soundId
+                                                    preload[#preload + 1] = sound
+                                                end
+                                                game:GetService("ContentProvider"):PreloadAsync(preload)
+                                                for _, sound in ipairs(preload) do
+                                                    sound:Destroy()
+                                                end
+                                            end)
+                                        end)
+
                                         font = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold)
                                         _G._AmousFontMode = _G._AmousFontMode == "PIXEL" and "PIXEL" or "DEFAULT"
 
@@ -16601,7 +16646,15 @@ end
 
 
                                 local function amousSetOpen(argumentValue, argumentValue2)
+                                    if not argumentValue2 and argumentValue ~= temporaryValue94 and _G._AmousSettingsReady == true and _G._AmousPlayUiSound then
+                                        pcall(_G._AmousPlayUiSound, "gui")
+                                    end
+
                                     temporaryValue94 = argumentValue
+
+                                    if argumentValue and _G._AmousSettingsReady == true and _G._AmousResyncToggles then
+                                        task.defer(_G._AmousResyncToggles)
+                                    end
 
                                     if temporaryValue94 then
                                         if frame3 then
@@ -16765,7 +16818,12 @@ end
                                     textButton2.AutoButtonColor = false
 
                                     textButton2.Activated:Connect(function()
-                                        helperFunction79(not conditionFlag29, false)
+                                        local amousNewToggleValue = not conditionFlag29
+                                        helperFunction79(amousNewToggleValue, false)
+
+                                        if amousNewToggleValue and _G._AmousPlayUiSound then
+                                            _G._AmousPlayUiSound("toggle")
+                                        end
                                     end)
 
                                     handlers[argumentValue2] = helperFunction79
@@ -19231,11 +19289,7 @@ end
                                         handlers["Auto Right"](pending.autoRight == true or autoPathState.R == true, true)
                                     end
 
-                                    if handlers["Match Speed"] then
-                                        handlers["Match Speed"](_G._AmousAutoPathMatchSpeed == true, true)
-                                    end
-
-                                    if handlers["Safe Mode"] then
+                                                                        if handlers["Safe Mode"] then
                                         handlers["Safe Mode"](_G._AmousSafeModeEnabled == true, true)
                                     end
 
@@ -19662,6 +19716,44 @@ end
                                         end
                                     end
                                 end)
+
+                                local function amousResyncToggleVisuals()
+                                    local pending = _G._AmousSafeModeState and _G._AmousSafeModeState.pending or {}
+                                    local amousToggleStates = {
+                                        ["Ragdoll Steal"] = _G._AmousRagdollStealEnabled ~= false,
+                                        ["Auto Steal"] = autoStealState.AutoSteal == true,
+                                        ["Auto Swing"] = combatSettings.swing == true,
+                                        ["Mirror TP"] = combatSettings.tpMirror == true,
+                                        ["Bat Counter"] = _G._VezyBatCounterOn == true,
+                                        ["Medusa Counter"] = conditionFlag25 == true,
+                                        ["Infinite Jump"] = conditionFlag14 == true,
+                                        ["Anti Ragdoll"] = ragdollCountdownState.enabled == true,
+                                        ["Anti Die"] = _G._AmousVasperAntiDieEnabled == true,
+                                        ["Auto Carry Mode"] = _G._AmousAutoCarry == true,
+                                        ["Bodylock"] = _G._AmousLookAtEnemyEnabled == true,
+                                        ["Auto TP Down"] = autoTPState.enabled == true,
+                                        ["FOV Change"] = performanceSettings.fov == true,
+                                        ["Stretch Res"] = performanceSettings.stretch == true,
+                                        ["Anti-Lag"] = performanceSettings.antilag == true,
+                                        ["Potato Graphics"] = _G._AmousPotatoGraphics == true,
+                                        ["ESP"] = _G._AmousESPEnabled == true,
+                                        ["Show Tracer"] = _G._AmousESPShowTracer ~= false,
+                                        ["Ragdoll Countdown"] = _G._AmousRagCountdownEnabled ~= false,
+                                        ["Bat Aimbot"] = pending.aimbot == true or combatSettings.aimbot == true,
+                                        ["TP Bat"] = pending.tpBat == true or combatSettings.desync == true,
+                                        ["Auto Left"] = pending.autoLeft == true or autoPathState.L == true,
+                                        ["Auto Right"] = pending.autoRight == true or autoPathState.R == true,
+                                    }
+
+                                    for name, value in pairs(amousToggleStates) do
+                                        local handler = handlers[name]
+                                        if handler then
+                                            pcall(handler, value, true)
+                                        end
+                                    end
+                                end
+
+                                _G._AmousResyncToggles = amousResyncToggleVisuals
 
                                 task.delay(12, function()
                                     if _G._AmousSettingsReady ~= true and helperFunction42() then
@@ -20143,6 +20235,9 @@ end
 
                                     if not pcall(function()
                                     amousSyncMobile()
+                                    amousResyncToggleVisuals()
+                                    task.delay(1.5, amousResyncToggleVisuals)
+                                    task.delay(4, amousResyncToggleVisuals)
                                     end) then
                                         _G._AmousBootFailures = (_G._AmousBootFailures or 0) + 1
                                     end
@@ -20620,6 +20715,14 @@ end
                                                 amousPauseRow:Destroy()
                                             end
 
+                                            _G._AmousAutoPathMatchSpeed = false
+
+                                            local amousMatchSpeedRow = amousCombatPage and amousCombatPage:FindFirstChild("Match Speed")
+
+                                            if amousMatchSpeedRow then
+                                                amousMatchSpeedRow:Destroy()
+                                            end
+
                                             local amousSkinGalleryGui = screenGui and screenGui:FindFirstChild("AmousSkinGallery")
 
                                             if amousSkinGalleryGui then
@@ -20793,8 +20896,7 @@ end
                                                 "Auto Right",
                                                 "Medusa Counter",
                                                 "Bodylock",
-                                                "Match Speed",
-                                                "Stretch Res",
+                                                                                                "Stretch Res",
                                                 "Potato Graphics",
                                                 "Background Color",
                                                 "Steal Bar Match",
