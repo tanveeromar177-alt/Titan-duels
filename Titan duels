@@ -13750,14 +13750,10 @@ end
 
                                     instance6.MouseEnter:Connect(function()
                                         TweenService:Create(instance6, TweenInfo.new(0.1), { BackgroundTransparency = 0.2 }):Play()
-                                        temporaryValue89.Color = temporaryValue78
-                                        temporaryValue89.Transparency = temporaryValue82
                                     end)
 
                                     instance6.MouseLeave:Connect(function()
                                         TweenService:Create(instance6, TweenInfo.new(0.4), { BackgroundTransparency = 0.3 }):Play()
-                                        temporaryValue89.Color = temporaryValue79
-                                        temporaryValue89.Transparency = temporaryValue83
                                     end)
 
                                     return instance6
@@ -16551,9 +16547,9 @@ end
                                 end
 
                                 local dataTable49 = {
-                                    Movement = "MOVEMENT",
+                                    Movement = "SPEED",
                                     Combat = "COMBAT",
-                                    Keybinds = "KBM",
+                                    Keybinds = "KEYS",
                                     Controller = "CTRL",
                                     Utility = "VISUAL",
                                     Settings = "SETTINGS",
@@ -16591,6 +16587,7 @@ end
                                     uiTextSizeConstraint.MaxTextSize = 12
                                     amousCleanAddCorner(textButton2, 9)
                                     local temporaryValue95, temporaryValue96 = amousCleanAddGradientStroke(textButton2, 1.2)
+                                    temporaryValue95.Enabled = false
                                     temporaryValue96.Name = "BorderGradient"
 
                                     textButton2.Activated:Connect(function()
@@ -20396,7 +20393,7 @@ end
                                         end
 
                                         task.delay(1, function()
-                                            for _, amousRemoveName in ipairs({ "Background Color", "Steal Bar Match", "ColorThemePicker", "Advanced Lagger Button", "Move Buttons", "Intro", "Section_Interface" }) do
+                                            for _, amousRemoveName in ipairs({ "Background Color", "Steal Bar Match", "ColorThemePicker", "Advanced Lagger Button", "Move Buttons", "Intro", "Section_Interface", "Section_UI Scale" }) do
                                                 local amousRemoveRow = Settings and Settings:FindFirstChild(amousRemoveName)
 
                                                 if amousRemoveRow then
@@ -20494,22 +20491,21 @@ end
                                         end)
 
                                         local resetAllSettings = amousCleanCreateSettingRow(Settings, "RESET ALL SETTINGS", { button = true })
-                                        resetAllSettings.Size = UDim2.new(1, -4, 0, 42)
-                                        resetAllSettings.BackgroundColor3 = Color3.fromRGB(232, 232, 238)
-                                        resetAllSettings.BackgroundTransparency = 0
+                                                                                resetAllSettings.BackgroundColor3 = dataTable37.row
+                                        resetAllSettings.BackgroundTransparency = 0.3
                                         local textLabel3 = resetAllSettings:FindFirstChildOfClass("TextLabel")
 
                                         if textLabel3 then
-                                            textLabel3.TextColor3 = Color3.fromRGB(0, 0, 0)
+                                            textLabel3.TextColor3 = dataTable37.text
                                             textLabel3.TextSize = 12
                                         end
 
                                         resetAllSettings.MouseEnter:Connect(function()
-                                            TweenService:Create(resetAllSettings, TweenInfo.new(0.4), { BackgroundTransparency = 0.08 }):Play()
+                                            TweenService:Create(resetAllSettings, TweenInfo.new(0.4), { BackgroundTransparency = 0.2 }):Play()
                                         end)
 
                                         resetAllSettings.MouseLeave:Connect(function()
-                                            TweenService:Create(resetAllSettings, TweenInfo.new(0.1), { BackgroundTransparency = 0 }):Play()
+                                            TweenService:Create(resetAllSettings, TweenInfo.new(0.1), { BackgroundTransparency = 0.3 }):Play()
                                         end)
 
                                         helperFunction83(Settings, "RESET ALL SETTINGS", function()
@@ -20846,9 +20842,9 @@ end
                                     helperFunction94("HideSpecificButtonsList", 34)
                                     helperFunction94("Button Size %", 35)
                                     helperFunction94("Move Buttons", 36)
-                                    helperFunction94("Reset Buttons", 37)
+                                    helperFunction94("Reset Buttons", 38)
                                     helperFunction94("Section_UI Scale", 40)
-                                    helperFunction94("UI Scale", 41)
+                                    helperFunction94("UI Scale", 37)
                                     helperFunction94("Steal Bar Size", 36)
                                     helperFunction94("Section_Interface", 50)
                                     helperFunction94("Intro Song", 15)
