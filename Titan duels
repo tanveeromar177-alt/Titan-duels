@@ -527,8 +527,7 @@ _G.AmousBatAimbotV2On = _G.AmousBatAimbotV2On or false
 -- >>> AIMBOT CHASE MODE BEGIN
 -- Modalita' di inseguimento per ciascun aimbot: "NORMAL" oppure "BYPASS".
 -- Cambia SOLO la matematica del chase, non i nomi, le velocita' o il resto.
-_G._AmousAimbotChase = _G._AmousAimbotChase or { V1 = "NORMAL", V2 = "BYPASS" }
-_G._AmousAimbotChase.V2 = "BYPASS"
+_G._AmousAimbotChase = _G._AmousAimbotChase or { V1 = "NORMAL", V2 = "NORMAL" }
 -- <<< AIMBOT CHASE MODE END
 local tpBatAutoSwingEnabled = false
 _G.AmousTPBatVersion = _G.AmousTPBatVersion or 1   -- >>> TP BAT VERSIONS <<<
@@ -5531,7 +5530,7 @@ function loadAmousConfig()
   -- >>> AIMBOT CHASE MODE BEGIN
   _G._AmousAimbotChase = _G._AmousAimbotChase or { V1 = "NORMAL", V2 = "NORMAL" }
   _G._AmousAimbotChase.V1 = "NORMAL"
-  _G._AmousAimbotChase.V2 = "BYPASS"   -- Bat Aimbot fisso: V2 + BYPASS
+  _G._AmousAimbotChase.V2 = (data.aimbotChaseV2 == "BYPASS") and "BYPASS" or "NORMAL"
   -- <<< AIMBOT CHASE MODE END
   tpBatAutoSwingEnabled = data.tpBatAutoSwingEnabled == true
   -- Il do-block TP Bat viene eseguito DOPO loadAmousConfig, quindi il bridge
@@ -5558,7 +5557,7 @@ function loadAmousConfig()
   ragdollCountdownEnabled = data.ragdollCountdownEnabled == true
   fpsBoostEnabled = data.fpsBoostEnabled == true
   antiLagVisualEnabled = data.antiLagVisualEnabled == true
-  vividGraphicsEnabled = data.vividGraphicsEnabled == true
+  vividGraphicsEnabled = false   -- Vivid Graphics rimosso: sempre OFF
   if data.vividSaturation then _G._AmousVivid.saturation = math.clamp(tonumber(data.vividSaturation) or 0.6, 0, 2) end
   if data.vividBloomIntensity then _G._AmousVivid.bloomIntensity = math.clamp(tonumber(data.vividBloomIntensity) or 0.8, 0, 3) end
   if data.vividBloomSize then _G._AmousVivid.bloomSize = math.clamp(tonumber(data.vividBloomSize) or 24, 1, 56) end
@@ -5567,7 +5566,7 @@ function loadAmousConfig()
   xrayEnabled = data.xrayEnabled == true
   _G.AmousBrainrotXRayEnabled = false   -- Brainrot X-Ray rimosso: sempre OFF
   highPingWarningEnabled = false
-  _G._AmousKickWarn.enabled = data.kickWarningEnabled == true
+  _G._AmousKickWarn.enabled = false   -- Kick Warning rimosso: sempre OFF
   _G.AmousUAKEnabled = data.ultimateAntiKick == true
   fovEnabled = data.fovEnabled == true
   fovValue = tonumber(data.fovValue) or fovValue
@@ -7072,10 +7071,7 @@ function _G.AmousGetClosestAimbotTarget()
 end
 
 function _G.AmousGetNormalAimbotSpeed()
-  if currentSpeedMode == "Lagger" or currentSpeedMode == "Lagger Carry" then
-    return tonumber(LAGGER_AIMBOT_SPEED) or 40
-  end
-  return tonumber(AIMBOT_SPEED) or 58
+  return _G.AmousGetBatAimbotV2Speed()
 end
 
 function _G.AmousGetBatAimbotV2Speed()
@@ -7108,310 +7104,144 @@ function _G.AmousRefreshAimbotSpeedBoxes()
   if _G.AmousLaggerAimbotSpeedBox then _G.AmousLaggerAimbotSpeedBox.Text = tostring(l) end
 end
 
-function _G.AmousStartNormalAimbot(keepV2)
-  -- Anti Die SUBITO, prima riga della funzione. Stava nel wrapper in fondo
-  -- al file: funzionava solo per chi chiamava il nome globale DOPO che i
-  -- wrapper erano stati installati, e chi entrava per altre strade (o
-  -- prima) partiva scoperto. Qui non c'e' strada che lo salti.
-  if _G.AmousAntiDieArmNow then pcall(_G.AmousAntiDieArmNow) end
-  if _G.AmousSafeModeTryStart and not _G.AmousSafeModeTryStart() then return false end
-  if _G.AmousStopAutoTPForAction then _G.AmousStopAutoTPForAction() end
-  -- keepV2 = true quando e' il Bat Aimbot V2 a usare questo chase come fase 1
-  if not keepV2 then
-    if _G.AmousStopBatAimbotV2 then _G.AmousStopBatAimbotV2(false) end
-    _G.AmousBatAimbotV2On = false
+-- ===== BAT AIMBOT (inseguimento portato da Ace Duel) =====
+-- Un solo Bat Aimbot. Due modalita' di inseguimento, scelte dal selettore in
+-- Combat (_G._AmousAimbotChase.V2):
+--   NORMAL: mira con velocita' angolare e punta un po' sopra e prima del
+--           bersaglio, con piccola predizione sulla sua velocita'.
+--   BYPASS: inseguimento a velocita' lineare con lerp, ruota verso il bersaglio.
+-- Lo swing NON e' quello di Ace: resta l'Auto Swing della hub (autoSwingEnabled).
+-- Da acceso valgono entrambi i flag _G.AmousBatAimbotV2On e
+-- _G.AmousNormalAimbotOn: restano perche' il resto della hub li legge, ma
+-- spegnere uno dei due spegne tutto.
+_G._AmousAceAimbot = {
+  DIST = -2.8, HEIGHT = 4.75, VERT_OFFSET = 1, VERT_SPEED = 52,
+  TURN_SPEED = 285, MAX_TURN_RATE = 26,
+}
+
+function _G._AmousAceAimbot.step()
+  if _G.AmousBatAimbotV2On ~= true then return end
+  local A = _G._AmousAceAimbot
+  local S = _G.AmousNormalAimbot
+  local char = LP.Character
+  if not char then return end
+  local root = char:FindFirstChild("HumanoidRootPart")
+  local hum = char:FindFirstChildOfClass("Humanoid")
+  if not root or not hum then return end
+
+  if not char:FindFirstChildOfClass("Tool") then
+    local b = _G.AmousFindAimbotBat()
+    if b and b.Parent ~= char then
+      pcall(function() hum:EquipTool(b) end)
+    end
   end
-  _G.AmousNormalAimbotOn = true
-  if _G.AmousStartChaseRagdollWatcher then _G.AmousStartChaseRagdollWatcher() end
-  if _G.AmousNormalAimbot.conn then
-    _G.AmousNormalAimbot.conn:Disconnect()
-    _G.AmousNormalAimbot.conn = nil
+
+  local target = _G.AmousGetClosestAimbotTarget()
+  S.target = target
+  if not target then
+    hum.AutoRotate = true
+    return
   end
-  local hum0 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-  if hum0 then hum0.AutoRotate = false end
-  _G.AmousNormalAimbot.conn = RunService.RenderStepped:Connect(function()
-    if not _G.AmousNormalAimbotOn then return end
-    local char = LP.Character
-    if not char then return end
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    local bat = char:FindFirstChildOfClass("Tool") or _G.AmousFindAimbotBat()
-    if bat and bat.Parent ~= char then
-      pcall(function() hum:EquipTool(bat) end)
-    end
-    local target = _G.AmousGetClosestAimbotTarget()
-    if not target then return end
-    _G.AmousNormalAimbot.target = target
+  hum.AutoRotate = false
 
-    -- >>> AIMBOT CHASE MODE BEGIN
-    -- Se l'aimbot attivo e' in BYPASS si usa l'inseguimento alternativo.
-    local _chaseKey  = (_G.AmousBatAimbotV2On == true) and "V2" or "V1"
-    local _chaseMode = (_G._AmousAimbotChase and _G._AmousAimbotChase[_chaseKey]) or "NORMAL"
-    if _chaseMode == "BYPASS" then
-      local myPos     = root.Position
-      local targetPos = target.Position
-      -- >>> ANTI VOID BEGIN
-      if _G.AmousAntiVoid then
-        targetPos = _G.AmousAntiVoid.posForPart(target, targetPos)
-      end
-      -- <<< ANTI VOID END
-      local direction = targetPos - myPos
-      local flatDir   = Vector3.new(direction.X, 0, direction.Z)
-      if flatDir.Magnitude > 0 then flatDir = flatDir.Unit else flatDir = Vector3.zero end
-      -- >>> PATHFINDING <<< percorso vero verso il bersaglio, come Auto
-      -- Left/Right ma DINAMICO: il nemico si muove, quindi il percorso si
-      -- ricalcola spesso (0.35s) e subito se si e' spostato di 4 studs.
-      if _G.AmousPathfind and flatDir.Magnitude > 0 then
-        local pd = _G.AmousPathfind.dirTo("aimbot", myPos, targetPos,
-                     {recompute = 0.35, drift = 4})
-        if pd then flatDir = pd end
-      end
+  local tPos, tVel = target.Position, target.AssemblyLinearVelocity
+  -- >>> ANTI VOID BEGIN
+  if _G.AmousAntiVoid then
+    local gp, isGhost = _G.AmousAntiVoid.posForPart(target, tPos)
+    tPos = gp
+    if isGhost then tVel = Vector3.zero end
+  end
+  -- <<< ANTI VOID END
+  local myPos = root.Position
+  local speed = _G.AmousGetBatAimbotV2Speed()
+  local mode = (_G._AmousAimbotChase and _G._AmousAimbotChase.V2) or "NORMAL"
 
-      local chaseSpeed = (_G.AmousBatAimbotV2On == true)
-        and (_G.AmousGetBatAimbotV2Speed and _G.AmousGetBatAimbotV2Speed() or _G.AmousGetNormalAimbotSpeed())
-        or _G.AmousGetNormalAimbotSpeed()
-
-      -- >>> BAT AIMBOT V2: inseguimento alla stessa altezza del nemico <<<
-      -- Il V1 sale di 3.7 stud e si stacca da terra; il V2 no, va dritto
-      -- addosso al player restando al suo livello.
-      local _isV2 = (_G.AmousBatAimbotV2On == true)
-      local desiredHeight = targetPos.Y + (_isV2 and 0 or 3.7)
-      local yVel = (desiredHeight - myPos.Y) * 19.5
-      if not _isV2 and hum.FloorMaterial ~= Enum.Material.Air then yVel = math.max(yVel, 13) end
-      yVel = math.clamp(yVel, -70, 110)
-
-      local desiredVel = Vector3.new(flatDir.X * chaseSpeed, yVel, flatDir.Z * chaseSpeed)
-      root.AssemblyLinearVelocity = root.AssemblyLinearVelocity:Lerp(desiredVel, 0.8)
-
-      local toTarget = targetPos - myPos
-      if toTarget.Magnitude > 0.1 then
-        local goalCF = CFrame.lookAt(myPos, targetPos)
-        local diffCF = root.CFrame:Inverse() * goalCF
-        local rx, ry, rz = diffCF:ToEulerAnglesXYZ()
-        rx = math.clamp(rx, -2.5, 2.5)
-        ry = math.clamp(ry, -2.5, 2.5)
-        rz = math.clamp(rz, -2.5, 2.5)
-        root.AssemblyAngularVelocity = root.CFrame:VectorToWorldSpace(Vector3.new(rx * 42, ry * 42, rz * 42))
-      end
-
-      -- Col V2 lo swing appartiene al TP Bat, non al chase.
-      -- Niente soglia di distanza: qui c'era un "toTarget.Magnitude <= 8"
-      -- che il ramo Normal non ha, ed e' il motivo per cui in Bypass il
-      -- V1 iniziava a menare solo una volta arrivato addosso al nemico
-      -- invece che dall'accensione.
-      if autoSwingEnabled and bat and _G.AmousBatAimbotV2On ~= true
-        and not _G.AmousNormalAimbot.swingCooldown then
-        _G.AmousNormalAimbot.swingCooldown = true
-        pcall(function() bat:Activate() end)
-        task.delay(0.08, function()
-          if _G.AmousNormalAimbot then _G.AmousNormalAimbot.swingCooldown = false end
-        end)
-      end
-      return
-    end
-    -- <<< AIMBOT CHASE MODE END
-
-    local targetVel = target.AssemblyLinearVelocity
-    local myPos = root.Position
-    local targetPos = target.Position
-    -- >>> ANTI VOID BEGIN
-    if _G.AmousAntiVoid then
-      local gp, isGhost = _G.AmousAntiVoid.posForPart(target, targetPos)
-      targetPos = gp
-      -- fuori zona non c'e' niente da predire: il bersaglio e' fermo
-      if isGhost then targetVel = Vector3.zero end
-    end
-    -- <<< ANTI VOID END
-    -- >>> BAT AIMBOT V2: nessuna predizione <<<
-    -- Il V1 anticipa il bersaglio (velocita' * 0.14 + un pezzo di LookVector);
-    -- il V2 punta la posizione reale, senza anticipo.
-    local _isV2 = (_G.AmousBatAimbotV2On == true)
-    local predictPos = targetPos
-    if not _isV2 then
-      predictPos = targetPos + targetVel * 0.14 + target.CFrame.LookVector * 0.3
-    end
-    local direction = predictPos - myPos
-    if direction.Magnitude < 0.01 then return end
-    local flatDir = Vector3.new(direction.X, 0, direction.Z)
-    if flatDir.Magnitude < 0.01 then return end
-    flatDir = flatDir.Unit
-    -- >>> PATHFINDING <<< come nel ramo Bypass. La mira resta sul
-    -- bersaglio, non sulla direzione del waypoint.
-    if _G.AmousPathfind then
-      local pd = _G.AmousPathfind.dirTo("aimbot", myPos, targetPos,
-                   {recompute = 0.35, drift = 4})
-      if pd then flatDir = pd end
-    end
-    local chaseSpeed = (_G.AmousBatAimbotV2On == true)
-      and (_G.AmousGetBatAimbotV2Speed and _G.AmousGetBatAimbotV2Speed() or _G.AmousGetNormalAimbotSpeed())
-      or _G.AmousGetNormalAimbotSpeed()
-    -- >>> BAT AIMBOT V2: inseguimento alla stessa altezza del nemico <<<
-    -- Il V1 sale di 3.7 stud e si stacca da terra; il V2 no, va dritto
-    -- addosso al player restando al suo livello.
-    local desiredHeight = targetPos.Y + (_isV2 and 0 or 3.7)
-    local yVel = (desiredHeight - myPos.Y) * 19.5
-    if not _isV2 then
-      -- anticipo verticale: solo V1
-      yVel = yVel + targetVel.Y * 0.8
-    end
-    if not _isV2 and hum.FloorMaterial ~= Enum.Material.Air then
-      yVel = math.max(yVel, 13)
-    end
-    yVel = math.clamp(yVel, -70, 110)
-    local desiredVel = Vector3.new(flatDir.X * chaseSpeed, yVel, flatDir.Z * chaseSpeed)
-    root.AssemblyLinearVelocity = root.AssemblyLinearVelocity:Lerp(desiredVel, 0.8)
-    -- Mira: il V1 anticipa in base alla velocita', il V2 guarda il punto reale.
-    local predictedPos = targetPos
-    if not _isV2 then
-      local predictTime = math.clamp(targetVel.Magnitude / 150, 0.05, 0.2)
-      predictedPos = targetPos + targetVel * predictTime
-    end
-    local toPredict = predictedPos - myPos
-    if toPredict.Magnitude > 0.1 then
-      local goalCF = CFrame.lookAt(myPos, predictedPos)
-      local diffCF = root.CFrame:Inverse() * goalCF
-      local rx, ry, rz = diffCF:ToEulerAnglesXYZ()
+  if mode == "BYPASS" then
+    local flat = Vector3.new(tPos.X - myPos.X, 0, tPos.Z - myPos.Z)
+    flat = (flat.Magnitude > 0) and flat.Unit or Vector3.zero
+    local vy = ((tPos.Y + 3.7) - myPos.Y) * 19.5
+    if hum.FloorMaterial ~= Enum.Material.Air then vy = math.max(vy, 13) end
+    vy = math.clamp(vy, -70, 110)
+    root.AssemblyLinearVelocity = root.AssemblyLinearVelocity:Lerp(
+      Vector3.new(flat.X * speed, vy, flat.Z * speed), 0.8)
+    if (tPos - myPos).Magnitude > 0.1 then
+      local goalCF = CFrame.lookAt(myPos, tPos)
+      local rx, ry, rz = (root.CFrame:Inverse() * goalCF):ToEulerAnglesXYZ()
       rx = math.clamp(rx, -2.5, 2.5)
       ry = math.clamp(ry, -2.5, 2.5)
       rz = math.clamp(rz, -2.5, 2.5)
-      root.AssemblyAngularVelocity = root.CFrame:VectorToWorldSpace(Vector3.new(rx * 42, ry * 42, rz * 42))
+      root.AssemblyAngularVelocity = root.CFrame:VectorToWorldSpace(
+        Vector3.new(rx * 42, ry * 42, rz * 42))
     end
-    -- Col V2 lo swing appartiene al TP Bat, non al chase
-    if autoSwingEnabled and bat and _G.AmousBatAimbotV2On ~= true
-      and not _G.AmousNormalAimbot.swingCooldown then
-      _G.AmousNormalAimbot.swingCooldown = true
-      pcall(function() bat:Activate() end)
-      task.delay(0.08, function()
-        if _G.AmousNormalAimbot then _G.AmousNormalAimbot.swingCooldown = false end
-      end)
-    end
-  end)
-  if _G.AmousRefreshAimbotVisual then _G.AmousRefreshAimbotVisual() end
-  if _G.AmousRefreshMobileButtonStates then _G.AmousRefreshMobileButtonStates() end
-end
-
-function _G.AmousStopNormalAimbot()
-  _G.AmousNormalAimbotOn = false
-  if _G.AmousStopChaseRagdollWatcher then _G.AmousStopChaseRagdollWatcher() end
-  -- Percorso buttato: al prossimo inseguimento si riparte da dove sei
-  -- adesso, non da waypoint calcolati per un bersaglio vecchio.
-  if _G.AmousPathfind then pcall(_G.AmousPathfind.reset, "aimbot") end
-  if _G.AmousNormalAimbot and _G.AmousNormalAimbot.conn then
-    _G.AmousNormalAimbot.conn:Disconnect()
-    _G.AmousNormalAimbot.conn = nil
-  end
-  if _G.AmousNormalAimbot then
-    _G.AmousNormalAimbot.target = nil
-    _G.AmousNormalAimbot.swingCooldown = false
-  end
-  local c = LP.Character
-  local root = c and c:FindFirstChild("HumanoidRootPart")
-  if root then
-    root.AssemblyLinearVelocity = Vector3.zero
-    root.AssemblyAngularVelocity = Vector3.zero
-  end
-  local hum2 = c and c:FindFirstChildOfClass("Humanoid")
-  if hum2 then hum2.AutoRotate = true end
-  if _G.AmousRefreshAimbotVisual then _G.AmousRefreshAimbotVisual() end
-  if _G.AmousRefreshMobileButtonStates then _G.AmousRefreshMobileButtonStates() end
-end
-
--- ===== BAT AIMBOT V2 =====
--- Il V2 non ha piu' una logica di inseguimento propria: riusa il chase del
--- Bat Aimbot V1 (con le sue velocita' dedicate) e, appena arriva entro
--- BAT_AIMBOT_V2_TP_DISTANCE stud dal nemico, passa il controllo al TP Bat.
--- In questa fase il TP Bat ignora la sua distanza minima di 8 stud: lo snap
--- avviene comunque. Il TP Bat avviato a mano continua invece a rispettarla.
-_G.AmousBatAimbotV2State = _G.AmousBatAimbotV2State or {conn = nil}
-_G.AmousBatAimbotV2TPDistance = 4
-
-function _G.AmousBatAimbotV2GetClosest()
-  local root = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
-  if not root then return nil, math.huge end
-  local closest, minDist = nil, math.huge
-  for _, plr in ipairs(Players:GetPlayers()) do
-    if plr ~= LP and plr.Character then
-      local tRoot = plr.Character:FindFirstChild("HumanoidRootPart")
-      local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-      if tRoot and hum and hum.Health > 0 then
-        -- >>> ANTI VOID BEGIN
-        -- Nel void la distanza va misurata sulla posizione fantasma,
-        -- altrimenti il bersaglio risulta lontanissimo e il trigger
-        -- dei 4 stud del V2 non scatta mai.
-        local tPos = tRoot.Position
-        if _G.AmousAntiVoid then
-          tPos = _G.AmousAntiVoid.posFor(plr, tPos)
-        end
-        local dist = (tPos - root.Position).Magnitude
-        -- <<< ANTI VOID END
-        if dist < minDist then
-          minDist = dist
-          closest = tRoot
-        end
+  else
+    local aim = tPos + tVel * math.clamp(tVel.Magnitude / 130, 0.05, 0.15)
+      + Vector3.new(0, A.VERT_OFFSET, 0)
+    local toAim = aim - myPos
+    local flat = Vector3.new(toAim.X, 0, toAim.Z)
+    if toAim.Magnitude > 0.01 and flat.Magnitude > 0.01 then
+      local yawErr = (((math.deg(math.atan2(-flat.X, -flat.Z)) - root.Orientation.Y) + 180) % 360) - 180
+      local turn = math.clamp(math.rad(yawErr) * A.TURN_SPEED, -A.MAX_TURN_RATE, A.MAX_TURN_RATE)
+      root.AssemblyAngularVelocity = Vector3.new(0, turn, 0)
+      local goal = (aim + flat.Unit * A.DIST + Vector3.new(0, A.HEIGHT, 0)) - myPos
+      local goalFlat = Vector3.new(goal.X, 0, goal.Z)
+      local vel = (goalFlat.Magnitude > 0.2) and (goalFlat.Unit * speed) or Vector3.zero
+      local vy = math.clamp(goal.Y * 2.5, -A.VERT_SPEED, A.VERT_SPEED)
+      root.AssemblyLinearVelocity = Vector3.new(vel.X, vy, vel.Z)
+      if goalFlat.Magnitude > 0.5 then
+        hum:Move(goalFlat.Unit, false)
       end
     end
   end
-  return closest, minDist
+
+  -- Auto Swing della hub (non quello di Ace)
+  local bat = char:FindFirstChildOfClass("Tool")
+  if autoSwingEnabled and bat and bat.Parent == char and not S.swingCooldown then
+    S.swingCooldown = true
+    pcall(function() bat:Activate() end)
+    task.delay(0.08, function() S.swingCooldown = false end)
+  end
 end
 
--- Fase 1: chase con la logica del V1 (il flag keepV2 evita che il V1 spenga il V2)
-function _G.AmousBatAimbotV2StartChase()
-  if _G.AmousStartNormalAimbot then _G.AmousStartNormalAimbot(true) end
-end
-
-function _G.AmousStartBatAimbotV2()
-  -- Anti Die SUBITO, prima riga della funzione. Stava nel wrapper in fondo
-  -- al file: funzionava solo per chi chiamava il nome globale DOPO che i
-  -- wrapper erano stati installati, e chi entrava per altre strade (o
-  -- prima) partiva scoperto. Qui non c'e' strada che lo salti.
+function _G._AmousAceAimbot.start()
+  -- Anti Die SUBITO, prima di ogni altra cosa: nessuna strada lo salta.
   if _G.AmousAntiDieArmNow then pcall(_G.AmousAntiDieArmNow) end
-  if _G.AmousSafeModeTryStart and not _G.AmousSafeModeTryStart() then return false end
+  if _G.AmousSafeModeTryStart and not _G.AmousSafeModeTryStart() then
+    _G.AmousBatAimbotV2On = false
+    _G.AmousNormalAimbotOn = false
+    return false
+  end
   if _G.AmousStopAutoTPForAction then _G.AmousStopAutoTPForAction() end
   _G.AmousBatAimbotV2On = true
+  _G.AmousNormalAimbotOn = true
   selectedAimbotMode = "V2"
-  _G.AmousBatAimbotV2StartChase()
-  if _G.AmousBatAimbotV2State.conn then
-    _G.AmousBatAimbotV2State.conn:Disconnect()
-    _G.AmousBatAimbotV2State.conn = nil
+  if _G.AmousStartChaseRagdollWatcher then _G.AmousStartChaseRagdollWatcher() end
+  local S = _G.AmousNormalAimbot
+  if S.conn then
+    S.conn:Disconnect()
+    S.conn = nil
   end
-  _G.AmousBatAimbotV2State.conn = RunService.Heartbeat:Connect(function()
-    if not _G.AmousBatAimbotV2On then return end
-    -- Mentre il TP Bat e' attivo comanda lui: nessun chase in parallelo.
-    if _G.AmousTPBatOn then return end
-    local target, dist = _G.AmousBatAimbotV2GetClosest()
-    local trigger = tonumber(_G.AmousBatAimbotV2TPDistance) or 4
-    if target and dist <= trigger then
-      -- Fase 2: entro i 5 stud subentra il TP Bat (senza limite di distanza)
-      -- Chiamata automatica: il bottone mobile del TP Bat resta spento.
-      _G.AmousTPBatSilent = true
-      -- Lo swing parte solo 0.05s dopo l'inizio del TP
-      _G._AmousV2SwingGate = tick() + 0.05
-      if _G.AmousStartTPBat then _G.AmousStartTPBat() end
-    elseif not _G.AmousNormalAimbotOn then
-      -- Il TP Bat si e' spento (es. nemico ragdollato): si torna al chase V1.
-      -- Piccolo cooldown per non ritentare ad ogni frame se lo start viene bloccato.
-      local now = tick()
-      if now - (_G.AmousBatAimbotV2State.lastChase or 0) >= 0.15 then
-        _G.AmousBatAimbotV2State.lastChase = now
-        _G.AmousBatAimbotV2StartChase()
-      end
-    end
-  end)
+  S.target = nil
+  S.swingCooldown = false
+  local hum0 = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
+  if hum0 then hum0.AutoRotate = false end
+  S.conn = RunService.RenderStepped:Connect(_G._AmousAceAimbot.step)
   if _G.AmousRefreshAimbotVisual then _G.AmousRefreshAimbotVisual() end
   if _G.AmousRefreshMobileButtonStates then _G.AmousRefreshMobileButtonStates() end
 end
 
-function _G.AmousStopBatAimbotV2(keepVisual)
+function _G._AmousAceAimbot.stop(keepVisual)
   _G.AmousBatAimbotV2On = false
+  _G.AmousNormalAimbotOn = false
   if _G.AmousStopChaseRagdollWatcher then _G.AmousStopChaseRagdollWatcher() end
-  if _G.AmousBatAimbotV2State and _G.AmousBatAimbotV2State.conn then
-    _G.AmousBatAimbotV2State.conn:Disconnect()
-    _G.AmousBatAimbotV2State.conn = nil
+  local S = _G.AmousNormalAimbot
+  if S then
+    if S.conn then
+      S.conn:Disconnect()
+      S.conn = nil
+    end
+    S.target = nil
+    S.swingCooldown = false
   end
-  if _G.AmousNormalAimbotOn and _G.AmousStopNormalAimbot then _G.AmousStopNormalAimbot() end
-  if _G.AmousTPBatOn and _G.AmousStopTPBat then _G.AmousStopTPBat() end
   local c = LP.Character
   local root = c and c:FindFirstChild("HumanoidRootPart")
   if root then
@@ -7428,21 +7258,17 @@ function _G.AmousStopBatAimbotV2(keepVisual)
   if _G.AmousRefreshMobileButtonStates then _G.AmousRefreshMobileButtonStates() end
 end
 
+-- Nomi pubblici storici: molti punti della hub li chiamano ancora.
+function _G.AmousStartNormalAimbot() return _G._AmousAceAimbot.start() end
+function _G.AmousStopNormalAimbot(keepVisual) return _G._AmousAceAimbot.stop(keepVisual) end
+function _G.AmousStartBatAimbotV2() return _G._AmousAceAimbot.start() end
+function _G.AmousStopBatAimbotV2(keepVisual) return _G._AmousAceAimbot.stop(keepVisual) end
+
 function _G.AmousToggleSelectedAimbot()
-  if selectedAimbotMode == "V2" then
-    if _G.AmousBatAimbotV2On then
-      if _G.AmousStopBatAimbotV2 then _G.AmousStopBatAimbotV2() else _G.AmousBatAimbotV2On = false end
-    else
-      if _G.AmousStopNormalAimbot then _G.AmousStopNormalAimbot() end
-      if _G.AmousStartBatAimbotV2 then _G.AmousStartBatAimbotV2() else _G.AmousBatAimbotV2On = true end
-    end
+  if _G.AmousBatAimbotV2On == true or _G.AmousNormalAimbotOn == true then
+    _G.AmousStopBatAimbotV2()
   else
-    if _G.AmousNormalAimbotOn then
-      _G.AmousStopNormalAimbot()
-    else
-      if _G.AmousStopBatAimbotV2 then _G.AmousStopBatAimbotV2(false) else _G.AmousBatAimbotV2On = false end
-      _G.AmousStartNormalAimbot()
-    end
+    _G.AmousStartBatAimbotV2()
   end
   if _G.AmousRefreshAimbotVisual then _G.AmousRefreshAimbotVisual() end
   saveAmousConfig()
@@ -7450,11 +7276,7 @@ end
 
 function _G.AmousRefreshAimbotVisual()
   if _G.AmousAimbotSetVisual then
-    if selectedAimbotMode == "V2" then
-      _G.AmousAimbotSetVisual(_G.AmousBatAimbotV2On == true)
-    else
-      _G.AmousAimbotSetVisual(_G.AmousNormalAimbotOn == true)
-    end
+    _G.AmousAimbotSetVisual(_G.AmousBatAimbotV2On == true)
   end
 end
 
@@ -13210,10 +13032,7 @@ local combatAimbotKeybindLabel = nil
 
 
 function getAimbotModeDisplay()
-  if selectedAimbotMode == "V2" then
-    return "Bat Aimbot V2"
-  end
-  return "Bat Aimbot V1"
+  return "Bat Aimbot"
 end
 
 function refreshAimbotButtonLabel()
@@ -13240,7 +13059,7 @@ function refreshAimbotModeLabels()
     local aimbotEntry = mobileButtons and mobileButtons.aimbot
     local aimbotMobileBtn = aimbotEntry and aimbotEntry.btn
     if aimbotMobileBtn then
-      aimbotMobileBtn.Text = (selectedAimbotMode == "V2") and "BAT\nAIMBOT\nV2" or "BAT\nAIMBOT\nV1"
+      aimbotMobileBtn.Text = "BAT\nAIMBOT"
     end
   end)
   -- Stessa versione anche nella lista Hide Mobile Buttons
@@ -14772,7 +14591,7 @@ if false then
   -- non possono divergere.
   local function adApplyVisual()
     local idx = (_G.AmousAfterDrop.action == "TPBAT") and 2 or 1
-    adTexts[1].Text = "BAT AIMBOT " .. ((selectedAimbotMode == "V2") and "V2" or "V1")
+    adTexts[1].Text = "BAT AIMBOT"
     adTexts[2].Text = "TP BAT"
     tween(adSlide, {Position = UDim2.new(0.5 * (idx - 1), 4, 0, 4)}, 0.18)
     for i, t in ipairs(adTexts) do
@@ -16187,7 +16006,8 @@ end
 section(Combat, "BAT AIMBOT", 5)
 -- (selettore V1/V2 rimosso: fisso V2)
 -- >>> AIMBOT CHASE MODE BEGIN
--- (selettore NORMAL/BYPASS rimosso: fisso BYPASS)
+-- Selettore NORMAL/BYPASS del Bat Aimbot (le due modalita' di Ace Duel)
+_G._AmousBuildAimbotChaseSelector(Combat, "V2", "BAT AIMBOT", 6)
 -- Come il Semi Sub Mode: si vede solo lo slider dell'aimbot selezionato
 _G.AmousRefreshAimbotChaseRows = function()
   if _G._AmousAimbotChaseHolderV1 then
@@ -16229,7 +16049,7 @@ if _G.AmousMirrorTPDownBtn then
   end)
 end
 
-aimbotSpeedRow, aimbotSpeedBox = textboxRow(Combat, "Bat Aimbot V1 Speed", tostring(AIMBOT_SPEED), 8)
+aimbotSpeedRow, aimbotSpeedBox = textboxRow(Combat, "Bat Aimbot Speed", tostring(AIMBOT_SPEED), 8)
 _G.AmousAimbotSpeedBox = aimbotSpeedBox
 aimbotSpeedLabel = aimbotSpeedRow and aimbotSpeedRow:FindFirstChild("Label")
 refreshAimbotModeLabels()
@@ -16242,7 +16062,7 @@ aimbotSpeedBox.FocusLost:Connect(function()
   saveAmousConfig()
 end)
 
-laggerAimbotSpeedRow, laggerAimbotSpeedBox = textboxRow(Combat, "Bat Aimbot V1 Lagger Speed", tostring(LAGGER_AIMBOT_SPEED), 9)
+laggerAimbotSpeedRow, laggerAimbotSpeedBox = textboxRow(Combat, "Bat Aimbot Lagger Speed", tostring(LAGGER_AIMBOT_SPEED), 9)
 _G.AmousLaggerAimbotSpeedBox = laggerAimbotSpeedBox
 laggerAimbotSpeedLabel = laggerAimbotSpeedRow and laggerAimbotSpeedRow:FindFirstChild("Label")
 refreshAimbotModeLabels()
@@ -16493,7 +16313,7 @@ tpDownKeybindRow(Keybinds, 4)
 speedKeybindRow(Keybinds, "Drop Brainrot", "DropBrainrot", 5)
 
 section(Keybinds, "COMBAT KEYBINDS", 6)
-aimbotKeybindRow = speedKeybindRow(Keybinds, "Bat Aimbot V1", "Aimbot", 7)
+aimbotKeybindRow = speedKeybindRow(Keybinds, "Bat Aimbot", "Aimbot", 7)
 combatAimbotKeybindLabel = aimbotKeybindRow and aimbotKeybindRow:FindFirstChild("Label")
 refreshAimbotModeLabels()
 speedKeybindRow(Keybinds, "TP Bat", "TPBat", 8)
@@ -18922,267 +18742,18 @@ function __AmousDuelsSetupVisualsUI()
       tween(holder, {Size = UDim2.new(0, 124, 0, 30), Position = UDim2.new(1, -132, 0.5, -15)}, 0.12)
     end)
 
-    -- Usa SKY_PRESET_COLORS globale (definito nel blocco sky changer sopra)
-    local function getSkyColor(name)
-      local t = SKY_PRESET_COLORS and SKY_PRESET_COLORS[name]
-      if t then return Color3.fromRGB(t[1], t[2], t[3]) end
-      return Color3.fromRGB(128, 128, 128)
-    end
-
-    local skyPickerGui = nil
-
-    local function closeSkyPicker()
-      if skyPickerGui and skyPickerGui.Parent then
-        local fadeTween = TweenService:Create(skyPickerGui.Frame, TweenInfo.new(0.2), {BackgroundTransparency = 1})
-        fadeTween:Play()
-        fadeTween.Completed:Connect(function()
-          skyPickerGui:Destroy()
-          skyPickerGui = nil
-        end)
-      end
-    end
-
+    -- Tap sul riquadro: passa al preset successivo (dopo l'ultimo si torna a
+    -- "Off"). Il vecchio popup con la griglia dei preset e' stato tolto.
     openBtn.Activated:Connect(function()
-      if skyPickerGui and skyPickerGui.Parent then
-        closeSkyPicker()
-        return
+      local list = SKY_PRESETS_LIST or {"Off"}
+      local cur = 0
+      for i, name in ipairs(list) do
+        if name == skyTheme then cur = i break end
       end
-
-      skyPickerGui = Instance.new("ScreenGui")
-      skyPickerGui.Name = "AmousHubSkyPicker"
-      skyPickerGui.ResetOnSpawn = false
-      skyPickerGui.IgnoreGuiInset = true
-      skyPickerGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-      skyPickerGui.DisplayOrder = 9999
-      skyPickerGui.Parent = HubGui
-
-      local backdrop = Instance.new("Frame")
-      backdrop.Name = "Backdrop"
-      backdrop.Size = UDim2.new(1, 0, 1, 0)
-      backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-      backdrop.BackgroundTransparency = 0.45
-      backdrop.BorderSizePixel = 0
-      backdrop.ZIndex = 1
-      backdrop.Parent = skyPickerGui
-
-      local pickerFrame = Instance.new("Frame")
-      pickerFrame.Name = "Frame"
-      pickerFrame.Size = UDim2.new(0, 380, 0, 520)
-      pickerFrame.Position = UDim2.new(0.5, -190, 0.5, -260)
-      pickerFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-      pickerFrame.BorderSizePixel = 0
-      pickerFrame.ZIndex = 2
-      pickerFrame.Parent = skyPickerGui
-      corner(pickerFrame, 16)
-      stroke(pickerFrame, Color3.fromRGB(90, 90, 105), 1.2, 0.3)
-
-      local titleBar = Instance.new("Frame")
-      titleBar.Name = "TitleBar"
-      titleBar.Size = UDim2.new(1, 0, 0, 48)
-      titleBar.Position = UDim2.new(0, 0, 0, 0)
-      titleBar.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
-      titleBar.BackgroundTransparency = 0.15
-      titleBar.BorderSizePixel = 0
-      titleBar.ZIndex = 3
-      titleBar.Parent = pickerFrame
-      corner(titleBar, 16)
-
-      local titleLabel = Instance.new("TextLabel")
-      titleLabel.Name = "Title"
-      titleLabel.Size = UDim2.new(1, -60, 1, 0)
-      titleLabel.Position = UDim2.new(0, 18, 0, 0)
-      titleLabel.BackgroundTransparency = 1
-      titleLabel.Text = "SELECT SKY PRESET"
-      titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-      titleLabel.Font = Enum.Font.GothamBlack
-      titleLabel.TextSize = 16
-      titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-      titleLabel.ZIndex = 4
-      titleLabel.Parent = titleBar
-
-      local closeBtn = Instance.new("TextButton")
-      closeBtn.Name = "CloseBtn"
-      closeBtn.Size = UDim2.new(0, 36, 0, 36)
-      closeBtn.Position = UDim2.new(1, -44, 0, 6)
-      closeBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
-      closeBtn.BackgroundTransparency = 0.1
-      closeBtn.BorderSizePixel = 0
-      closeBtn.Text = "X"
-      closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-      closeBtn.Font = Enum.Font.GothamBlack
-      closeBtn.TextSize = 14
-      closeBtn.AutoButtonColor = false
-      closeBtn.ZIndex = 4
-      closeBtn.Parent = titleBar
-      corner(closeBtn, 10)
-      stroke(closeBtn, Color3.fromRGB(90, 90, 105), 1, 0.4)
-
-      closeBtn.MouseEnter:Connect(function()
-        tween(closeBtn, {BackgroundColor3 = Color3.fromRGB(180, 50, 50)}, 0.12)
-      end)
-      closeBtn.MouseLeave:Connect(function()
-        tween(closeBtn, {BackgroundColor3 = Color3.fromRGB(25, 25, 28)}, 0.12)
-      end)
-      closeBtn.Activated:Connect(closeSkyPicker)
-
-      local scrollFrame = Instance.new("ScrollingFrame")
-      scrollFrame.Name = "Scroll"
-      scrollFrame.Size = UDim2.new(1, -16, 1, -64)
-      scrollFrame.Position = UDim2.new(0, 8, 0, 56)
-      scrollFrame.BackgroundTransparency = 1
-      scrollFrame.BorderSizePixel = 0
-      scrollFrame.ScrollBarThickness = 4
-      scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 90)
-      scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-      scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-      scrollFrame.ZIndex = 3
-      scrollFrame.Parent = pickerFrame
-
-      local gridLayout = Instance.new("UIGridLayout")
-      gridLayout.CellSize = UDim2.new(0, 108, 0, 108)
-      gridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
-      gridLayout.FillDirection = Enum.FillDirection.Horizontal
-      gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-      gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-      gridLayout.Parent = scrollFrame
-
-      local skyGridPad = Instance.new("UIPadding", scrollFrame)
-      skyGridPad.PaddingLeft = UDim.new(0, 8)
-      skyGridPad.PaddingRight = UDim.new(0, 8)
-      skyGridPad.PaddingTop = UDim.new(0, 8)
-      skyGridPad.PaddingBottom = UDim.new(0, 8)
-
-      for i, presetName in ipairs(SKY_PRESETS_LIST) do
-        local presetBtn = Instance.new("TextButton")
-        presetBtn.Name = "Preset_" .. presetName
-        presetBtn.Size = UDim2.new(1, 0, 1, 0)
-        presetBtn.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-        presetBtn.BackgroundTransparency = 0
-        presetBtn.BorderSizePixel = 0
-        presetBtn.Text = ""
-        presetBtn.AutoButtonColor = false
-        presetBtn.LayoutOrder = i
-        presetBtn.ZIndex = 4
-        presetBtn.ClipsDescendants = true
-        presetBtn.Parent = scrollFrame
-        corner(presetBtn, 18)
-
-        local presetCol = getSkyColor(presetName)
-        local isSelected = (skyTheme == presetName)
-
-        -- Alone colorato: il colore del preset sfuma dal basso verso l'alto
-        local cardGrad = Instance.new("UIGradient")
-        cardGrad.Color = ColorSequence.new({
-          ColorSequenceKeypoint.new(0, presetCol),
-          ColorSequenceKeypoint.new(0.55, Color3.fromRGB(
-            math.floor(presetCol.R * 110),
-            math.floor(presetCol.G * 110),
-            math.floor(presetCol.B * 110))),
-          ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 14)),
-        })
-        cardGrad.Rotation = 90
-        cardGrad.Parent = presetBtn
-
-        local btnStroke = Instance.new("UIStroke")
-        btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        btnStroke.Color = isSelected and Color3.fromRGB(255, 255, 255) or presetCol
-        btnStroke.Thickness = isSelected and 2.4 or 1.2
-        btnStroke.Transparency = isSelected and 0 or 0.55
-        btnStroke.Parent = presetBtn
-
-        local colorCircle = Instance.new("Frame")
-        colorCircle.Name = "ColorCircle"
-        colorCircle.Size = UDim2.new(0, 40, 0, 40)
-        colorCircle.Position = UDim2.new(0.5, -20, 0, 18)
-        colorCircle.BackgroundColor3 = presetCol
-        colorCircle.BorderSizePixel = 0
-        colorCircle.ZIndex = 5
-        colorCircle.Parent = presetBtn
-        Instance.new("UICorner", colorCircle).CornerRadius = UDim.new(0, 12)
-
-        local circleGrad = Instance.new("UIGradient")
-        if presetName == "Rainbow" then
-          -- pallino sfumato, cosi' si capisce a colpo d'occhio cos'e'
-          circleGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,    Color3.fromRGB(255, 60, 60)),
-            ColorSequenceKeypoint.new(0.2,  Color3.fromRGB(255, 180, 40)),
-            ColorSequenceKeypoint.new(0.4,  Color3.fromRGB(90, 220, 90)),
-            ColorSequenceKeypoint.new(0.6,  Color3.fromRGB(60, 200, 255)),
-            ColorSequenceKeypoint.new(0.8,  Color3.fromRGB(120, 110, 255)),
-            ColorSequenceKeypoint.new(1,    Color3.fromRGB(230, 90, 220)),
-          })
-        else
-        circleGrad.Color = ColorSequence.new({
-          ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-          ColorSequenceKeypoint.new(0.45, presetCol),
-          ColorSequenceKeypoint.new(1, presetCol),
-        })
-        end
-        if presetName ~= "Rainbow" then
-        circleGrad.Transparency = NumberSequence.new({
-          NumberSequenceKeypoint.new(0, 0.55),
-          NumberSequenceKeypoint.new(0.45, 0),
-          NumberSequenceKeypoint.new(1, 0),
-        })
-        end
-        circleGrad.Rotation = 125
-        circleGrad.Parent = colorCircle
-
-        local circleStroke = Instance.new("UIStroke")
-        circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-        circleStroke.Color = Color3.fromRGB(255, 255, 255)
-        circleStroke.Thickness = isSelected and 2 or 1.2
-        circleStroke.Transparency = isSelected and 0.05 or 0.45
-        circleStroke.Parent = colorCircle
-
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Name = "Name"
-        nameLabel.Size = UDim2.new(1, -8, 0, 24)
-        nameLabel.Position = UDim2.new(0, 4, 1, -32)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.Text = string.upper(presetName)
-        nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        nameLabel.TextStrokeTransparency = 0.4
-        nameLabel.Font = Enum.Font.GothamBlack
-        nameLabel.TextSize = 10
-        nameLabel.TextWrapped = true
-        nameLabel.ZIndex = 6
-        nameLabel.Parent = presetBtn
-
-        presetBtn.MouseEnter:Connect(function()
-          tween(btnStroke, {Transparency = 0, Thickness = 2.4}, 0.12)
-          tween(colorCircle, {Size = UDim2.new(0, 46, 0, 46), Position = UDim2.new(0.5, -23, 0, 15)}, 0.12)
-        end)
-        presetBtn.MouseLeave:Connect(function()
-          tween(btnStroke, {
-            Transparency = isSelected and 0 or 0.55,
-            Thickness = isSelected and 2.4 or 1.2
-          }, 0.12)
-          tween(colorCircle, {Size = UDim2.new(0, 40, 0, 40), Position = UDim2.new(0.5, -20, 0, 18)}, 0.12)
-        end)
-
-        presetBtn.Activated:Connect(function()
-          skyTheme = presetName
-          if skyValueLabel then skyValueLabel.Text = skyTheme end
-          if applyCustomSky then applyCustomSky(skyTheme) end
-          saveAmousConfig()
-          closeSkyPicker()
-        end)
-      end
-
-      backdrop.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-          closeSkyPicker()
-        end
-      end)
-
-      pickerFrame.Size = UDim2.new(0, 0, 0, 0)
-      pickerFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-      TweenService:Create(pickerFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 380, 0, 520),
-        Position = UDim2.new(0.5, -190, 0.5, -260)
-      }):Play()
+      skyTheme = list[(cur % #list) + 1]
+      if skyValueLabel then skyValueLabel.Text = skyTheme end
+      if applyCustomSky then applyCustomSky(skyTheme) end
+      saveAmousConfig()
     end)
 
     return row
@@ -19305,7 +18876,7 @@ function __AmousDuelsSetupVisualsUI()
       end)
     end
   end
-  do
+  if false then -- [removed UI: Vivid Graphics]
     -- Ordine 8: sopra Anti Lag (9), subito dopo la sezione PERFORMANCE (7).
     local row2, setVisual2 = toggleRow(Utility, "Vivid Graphics", vividGraphicsEnabled, 8)
     _SV.setVividGraphicsVisual = setVisual2
@@ -19722,7 +19293,7 @@ function __AmousDuelsSetupVisualsUI()
       end)
     end
   end
-  do
+  if false then -- [removed UI: Kick Warning]
     -- LayoutOrder 8 come Vivid Graphics e la sua riga Changer, ma creata
     -- dopo: a parita' di ordine il UIListLayout rispetta l'inserimento,
     -- quindi finisce subito sotto quelle due e sopra Anti Lag (9).
@@ -22714,7 +22285,7 @@ _G.__AmousDuelsSetupSettingsUI = function()
     -- esattamente come fa il bottone mobile ("BAT AIMBOT V1/V2").
     local function hideItemText(item)
       if item.dyn == "aimbot" then
-        return item.label .. " " .. ((selectedAimbotMode == "V2") and "V2" or "V1")
+        return item.label
       end
       return item.label
     end
@@ -26033,7 +25604,7 @@ end
       _G.AmousStealRadii = {Normal = 62, Semi = 60, SemiV2Radius = 60, SemiV2SemiRadius = 8}
       selectedAimbotMode = "V2"
       AIMBOT_SPEED = 58; LAGGER_AIMBOT_SPEED = 40
-      _G._AmousAimbotChase = { V1 = "NORMAL", V2 = "BYPASS" }   -- >>> AIMBOT CHASE MODE <<<
+      _G._AmousAimbotChase = { V1 = "NORMAL", V2 = "NORMAL" }   -- >>> AIMBOT CHASE MODE <<<
       _G.AmousBatAimbotV2Speed = 58; _G.AmousBatAimbotV2LaggerSpeed = 40; TP_BAT_SPEED = 58
       autoSwingEnabled = false; mirrorTPDownEnabled = false; tpBatAutoSwingEnabled = false
       -- ORDINE SPEGNIMENTO: prima il TP Bat, poi l'Anti-Void
@@ -27342,20 +26913,11 @@ _G.AmousDuelsForceSyncLoadedButtons = function()
     end
   end)
   pcall(function()
-    if selectedAimbotMode == "V2" then
-      if _G.AmousNormalAimbotStop then _G.AmousNormalAimbotStop() end
-      if _G.AmousBatAimbotV2On and _G.AmousBatAimbotV2Start then
-        _G.AmousBatAimbotV2Start()
-      elseif _G.AmousBatAimbotV2Stop then
-        _G.AmousBatAimbotV2Stop()
-      end
-    else
-      if _G.AmousBatAimbotV2Stop then _G.AmousBatAimbotV2Stop() end
-      if _G.AmousNormalAimbotOn and _G.AmousNormalAimbotStart then
-        _G.AmousNormalAimbotStart()
-      elseif _G.AmousNormalAimbotStop then
-        _G.AmousNormalAimbotStop()
-      end
+    local wantOn = (_G.AmousBatAimbotV2On == true) or (_G.AmousNormalAimbotOn == true)
+    if wantOn and _G.AmousBatAimbotV2Start then
+      _G.AmousBatAimbotV2Start()
+    elseif _G.AmousBatAimbotV2Stop then
+      _G.AmousBatAimbotV2Stop()
     end
     if _G.AmousRefreshAimbotVisual then _G.AmousRefreshAimbotVisual() end
   end)
@@ -28191,8 +27753,7 @@ local defaults = {
   end)
 
   local function _getAimbotMobileLabel()
-    if selectedAimbotMode == "V2" then return "BAT\nAIMBOT\nV2" end
-    return "BAT\nAIMBOT\nV1"
+    return "BAT\nAIMBOT"
   end
 
   makeButton("aimbot", _getAimbotMobileLabel(), defaults.aimbot, function(btn)
@@ -28268,7 +27829,7 @@ local defaults = {
       -- Aggiorna il testo in base alla versione selezionata
       local aimbotMobileBtn = mobileButtons.aimbot.btn
       if aimbotMobileBtn then
-        aimbotMobileBtn.Text = (selectedAimbotMode == "V2") and "BAT\nAIMBOT\nV2" or "BAT\nAIMBOT\nV1"
+        aimbotMobileBtn.Text = "BAT\nAIMBOT"
       end
       -- e la stessa versione nella lista Hide Mobile Buttons
       if _G._AmbHideOptLabel_aimbot then pcall(_G._AmbHideOptLabel_aimbot) end
