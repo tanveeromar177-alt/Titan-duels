@@ -5609,7 +5609,7 @@ function loadAmousConfig()
   autoTPHeight = tonumber(data.autoTPHeight) or autoTPHeight
   -- >>> TP DOWN METHOD <<<
   local _tpm = data.tpDownMethod
-  _G._AmousTPDownMethod = (_tpm == "SLOW" or _tpm == "ZIGZAG") and _tpm or "NORMAL"
+  _G._AmousTPDownMethod = "NORMAL"
   infJumpEnabled = data.infJumpEnabled == true
   if data.infJumpMode == "MANUAL" then infJumpMode = "MANUAL" else infJumpMode = "HOLD" end
   _G.AmousLookAtEnabled = data.lookAtEnabled == true
@@ -5619,16 +5619,16 @@ function loadAmousConfig()
   -- >>> TP RAGDOLL <<< il watcher va acceso o spento davvero, non basta
   -- il flag: e' lui che guarda lo stato del personaggio.
   if _G.AmousTPRagdoll and _G.AmousTPRagdoll.set then
-    pcall(_G.AmousTPRagdoll.set, data.tpRagdollEnabled == true)
+    pcall(_G.AmousTPRagdoll.set, false)
   else
-    _G.AmousTPRagdollEnabled = data.tpRagdollEnabled == true
+    _G.AmousTPRagdollEnabled = false
   end
   antiDieEnabled = data.antiDieEnabled == true
   _G._AmousAntiDieUserWanted = antiDieEnabled
   selectedDropMode = data.selectedDropMode or selectedDropMode
   _G.AmousInstantResetVersion = math.clamp(tonumber(data.instantResetVersion) or 1, 1, 2)
   if _G.AmousAfterDrop then
-    _G.AmousAfterDrop.enabled = data.afterDropEnabled == true
+    _G.AmousAfterDrop.enabled = false
     _G.AmousAfterDrop.action  = (data.afterDropAction == "TPBAT") and "TPBAT" or "AIMBOT"
   end
   if selectedDropMode ~= "Stand Still" then selectedDropMode = "TP UP" end
@@ -5754,7 +5754,7 @@ function loadAmousConfig()
   if data.vividSunIntensity then _G._AmousVivid.sunIntensity = math.clamp(tonumber(data.vividSunIntensity) or 0.2, 0, 1) end
   xrayEnabled = data.xrayEnabled == true
   _G.AmousBrainrotXRayEnabled = data.brainrotXRayEnabled == true   -- >>> BRAINROT X-RAY <<<
-  highPingWarningEnabled = data.highPingWarningEnabled == true
+  highPingWarningEnabled = false
   _G._AmousKickWarn.enabled = data.kickWarningEnabled == true
   _G.AmousUAKEnabled = data.ultimateAntiKick == true
   fovEnabled = data.fovEnabled == true
@@ -5802,7 +5802,7 @@ function loadAmousConfig()
   -- >>> RAINBOW MOBILE JOYSTICK BEGIN
   -- Qui si legge soltanto: il modulo non esiste ancora a questo punto del
   -- file, l'avvio avviene subito dopo la sua definizione.
-  _G.AmousRainbowJoystickEnabled  = data.rainbowJoystickEnabled == true
+  _G.AmousRainbowJoystickEnabled  = false
   -- <<< RAINBOW MOBILE JOYSTICK END
   _G.AmousRainbowToolsEnabled     = false
   _G.AmousTransparentToolsEnabled = false
@@ -5838,7 +5838,7 @@ function loadAmousConfig()
   if data.musicShuffleEnabled ~= nil then musicShuffleEnabled = data.musicShuffleEnabled == true end
   if data.musicLoopEnabled ~= nil then musicLoopEnabled = data.musicLoopEnabled == true end
   if autoLeftEnabled and autoRightEnabled then autoRightEnabled = false end
-  if data.trackerColor then
+  if false then
     BoxedESPOptions = BoxedESPOptions or {}
     if typeof(data.trackerColor) == "Color3" then
       BoxedESPOptions.trackerColor = data.trackerColor
@@ -11154,9 +11154,9 @@ local function setupOverheadInfo(char)
     discordGrad.Rotation = 0
     discordGrad.Transparency = NumberSequence.new(0)
     discordGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
     })
 
     -- DIVISORE (GRADIENTE GALATTICO)
@@ -11174,9 +11174,9 @@ local function setupOverheadInfo(char)
     dividerGrad.Rotation = 0
     dividerGrad.Transparency = NumberSequence.new(0.3)
     dividerGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
     })
 
     -- LABEL SPEED (GRADIENTE GALATTICO SUL TESTO)
@@ -11199,9 +11199,9 @@ local function setupOverheadInfo(char)
     speedGrad.Rotation = 0
     speedGrad.Transparency = NumberSequence.new(0)
     speedGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
     })
 end
 
@@ -11712,9 +11712,7 @@ end
 _G._AmousAccentList = _G._AmousAccentList or {}
 
 _G._AmousAccentIsGrey = function()
-  if _G._AmousBgCustom == true then return true end
-  local i = tonumber(_G._AmousBgIndex) or 1
-  return not (i == 1 or i == 2)
+  return true
 end
 
 _G._AmousApplyAccent = function()
@@ -11722,19 +11720,19 @@ _G._AmousApplyAccent = function()
 
   local c0, c1, c2, edge, soft, base
   if grey then
-    c0   = Color3.fromRGB(126, 126, 138)
-    c1   = Color3.fromRGB(62, 62, 70)
-    c2   = Color3.fromRGB(20, 20, 24)
-    edge = Color3.fromRGB(178, 178, 192)
-    soft = Color3.fromRGB(92, 92, 102)
-    base = Color3.fromRGB(62, 62, 70)
+    c0   = Color3.fromRGB(232, 232, 238)
+    c1   = Color3.fromRGB(165, 165, 175)
+    c2   = Color3.fromRGB(105, 105, 115)
+    edge = Color3.fromRGB(240, 240, 246)
+    soft = Color3.fromRGB(135, 135, 145)
+    base = Color3.fromRGB(165, 165, 175)
   else
-    c0   = Color3.fromRGB(202, 148, 255)
-    c1   = Color3.fromRGB(147, 51, 234)
-    c2   = Color3.fromRGB(101, 31, 190)
-    edge = Color3.fromRGB(216, 180, 254)
-    soft = Color3.fromRGB(126, 71, 190)
-    base = Color3.fromRGB(147, 51, 234)
+    c0   = Color3.fromRGB(232, 232, 232)
+    c1   = Color3.fromRGB(166, 166, 166)
+    c2   = Color3.fromRGB(123, 123, 123)
+    edge = Color3.fromRGB(249, 249, 249)
+    soft = Color3.fromRGB(148, 148, 148)
+    base = Color3.fromRGB(166, 166, 166)
   end
 
   local cs = ColorSequence.new({
@@ -11815,7 +11813,7 @@ _G._AmousToggleOnColor = function()
   if _G._AmousAccentIsGrey() then
     return Color3.fromRGB(62, 62, 70), Color3.fromRGB(178, 178, 192)
   end
-  return Color3.fromRGB(147, 51, 234), Color3.fromRGB(216, 180, 254)
+  return Color3.fromRGB(166, 166, 166), Color3.fromRGB(249, 249, 249)
 end
 
 -- Dopo che una tendina si chiude il canvas si accorcia, ma Roblox lascia
@@ -12577,7 +12575,7 @@ do
   -- Qui si legge soltanto: la barra delle tab non esiste ancora a questo
   -- punto del file, l'applicazione avviene dopo che e' stata costruita.
   if type(savedConfig.customFont) == "string" then
-    _G.AmousFontChoice = savedConfig.customFont
+    _G.AmousFontChoice = "Default"
   end
   if type(savedConfig.tabPosition) == "string" then
     _G._AmousTabPosition = "Left"
@@ -12609,6 +12607,7 @@ MiniBg.BackgroundTransparency = 1
 MiniBg.ScaleType = Enum.ScaleType.Crop
 MiniBg.ZIndex = 20
 MiniBg.Parent = MiniFrame
+MiniBg.Visible = false
 local _miniBgCorner = Instance.new("UICorner")
 _miniBgCorner.CornerRadius = UDim.new(0, 8)
 _miniBgCorner.Parent = MiniBg
@@ -13194,7 +13193,7 @@ function toggleRow(parent, labelText, default, order)
   -- Riempimento viola che sfuma quando il toggle e' acceso
   local fill = Instance.new("Frame")
   fill.Name = "Fill"
-  fill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  fill.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   fill.BackgroundTransparency = default and 0 or 1
   fill.Size = UDim2.new(1, 0, 1, 0)
   fill.BorderSizePixel = 0
@@ -13203,9 +13202,9 @@ function toggleRow(parent, labelText, default, order)
   corner(fill, 11)
   local fillGrad = Instance.new("UIGradient")
   fillGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   fillGrad.Rotation = 18
   fillGrad.Parent = fill
@@ -13221,7 +13220,7 @@ function toggleRow(parent, labelText, default, order)
   corner(knob, 999)
   local knobStroke = Instance.new("UIStroke")
   knobStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  knobStroke.Color = default and Color3.fromRGB(216, 180, 254) or Color3.fromRGB(120, 120, 135)
+  knobStroke.Color = default and Color3.fromRGB(249, 249, 249) or Color3.fromRGB(120, 120, 135)
   knobStroke.Thickness = 1.4
   knobStroke.Transparency = 0.15
   knobStroke.Parent = knob
@@ -13309,7 +13308,7 @@ _G.AmousActionToggleRow = function(parent, labelText, default, order)
   -- Riempimento viola che sfuma quando il toggle e' acceso
   local fill = Instance.new("Frame")
   fill.Name = "Fill"
-  fill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  fill.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   fill.BackgroundTransparency = default and 0 or 1
   fill.Size = UDim2.new(1, 0, 1, 0)
   fill.BorderSizePixel = 0
@@ -13318,9 +13317,9 @@ _G.AmousActionToggleRow = function(parent, labelText, default, order)
   corner(fill, 11)
   local fillGrad = Instance.new("UIGradient")
   fillGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   fillGrad.Rotation = 18
   fillGrad.Parent = fill
@@ -13336,7 +13335,7 @@ _G.AmousActionToggleRow = function(parent, labelText, default, order)
   corner(knob, 999)
   local knobStroke = Instance.new("UIStroke")
   knobStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  knobStroke.Color = default and Color3.fromRGB(216, 180, 254) or Color3.fromRGB(120, 120, 135)
+  knobStroke.Color = default and Color3.fromRGB(249, 249, 249) or Color3.fromRGB(120, 120, 135)
   knobStroke.Thickness = 1.4
   knobStroke.Transparency = 0.15
   knobStroke.Parent = knob
@@ -13685,12 +13684,12 @@ _G.AmousAimbotSelectorRow = function(parent, order)
   holder.ClipsDescendants = true
   holder.Parent = parent
   corner(holder, 14)
-  stroke(holder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(holder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(holder, nil, "soft")
 
   local slide = Instance.new("Frame")
   slide.Name = "SelectedSlide"
-  slide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  slide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   slide.BackgroundTransparency = 0.1
   slide.Size = UDim2.new(0.5, -3, 1, -8)
   slide.Position = UDim2.new(0, 4, 0, 4)
@@ -13700,15 +13699,15 @@ _G.AmousAimbotSelectorRow = function(parent, order)
   corner(slide, 13)
   local slideStroke = Instance.new("UIStroke")
   slideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  slideStroke.Color = Color3.fromRGB(216, 180, 254)
+  slideStroke.Color = Color3.fromRGB(249, 249, 249)
   slideStroke.Thickness = 1.5
   slideStroke.Transparency = 0.1
   slideStroke.Parent = slide
   local slideGradient = Instance.new("UIGradient")
   slideGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   slideGradient.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -13818,12 +13817,12 @@ function autoStealSelectorRow(parent, order)
   holder.ClipsDescendants = true
   holder.Parent = parent
   corner(holder, 14)
-  stroke(holder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(holder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(holder, nil, "soft")
 
   local slide = Instance.new("Frame")
   slide.Name = "SelectedSlide"
-  slide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  slide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   slide.BackgroundTransparency = 0.1
   slide.Size = UDim2.new(0.5, -3, 1, -8)
   slide.Position = UDim2.new(0, 4, 0, 4)
@@ -13833,15 +13832,15 @@ function autoStealSelectorRow(parent, order)
   corner(slide, 13)
   local slideStroke = Instance.new("UIStroke")
   slideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  slideStroke.Color = Color3.fromRGB(216, 180, 254)
+  slideStroke.Color = Color3.fromRGB(249, 249, 249)
   slideStroke.Thickness = 1.5
   slideStroke.Transparency = 0.1
   slideStroke.Parent = slide
   local slideGradient = Instance.new("UIGradient")
   slideGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   slideGradient.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -14047,12 +14046,12 @@ _G._AmousBuildAutoCarryModeSelector = function(row, parentFrame)
   acHolder.Visible = false
   acHolder.Parent = parentFrame
   corner(acHolder, 14)
-  stroke(acHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(acHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(acHolder, nil, "soft")
 
   local acSlide = Instance.new("Frame")
   acSlide.Name = "SelectedSlide"
-  acSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  acSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   acSlide.BackgroundTransparency = 0.1
   acSlide.Size = UDim2.new(0.5, -3, 1, -8)
   acSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -14062,15 +14061,15 @@ _G._AmousBuildAutoCarryModeSelector = function(row, parentFrame)
   corner(acSlide, 13)
   local acSlideStroke = Instance.new("UIStroke")
   acSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  acSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  acSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   acSlideStroke.Thickness = 1.5
   acSlideStroke.Transparency = 0.1
   acSlideStroke.Parent = acSlide
   local acSlideGrad = Instance.new("UIGradient")
   acSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   acSlideGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -14283,7 +14282,7 @@ do
   atpdHolder.Visible = false
   atpdHolder.Parent = Movement
   corner(atpdHolder, 14)
-  stroke(atpdHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(atpdHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(atpdHolder, nil, "soft")
 
   local atpdLabel = Instance.new("TextLabel")
@@ -14381,12 +14380,12 @@ _G._AmousBuildDropMethodSelector = function(parentFrame, rowOrder, holderOrder)
   dropMethodHolder.Visible = false
   dropMethodHolder.Parent = parentFrame
   corner(dropMethodHolder, 14)
-  stroke(dropMethodHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(dropMethodHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(dropMethodHolder, nil, "soft")
 
   local dropSlide = Instance.new("Frame")
   dropSlide.Name = "SelectedSlide"
-  dropSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  dropSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   dropSlide.BackgroundTransparency = 0.1
   dropSlide.Size = UDim2.new(0.5, -3, 1, -8)
   dropSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -14396,15 +14395,15 @@ _G._AmousBuildDropMethodSelector = function(parentFrame, rowOrder, holderOrder)
   corner(dropSlide, 13)
   local dropSlideStroke = Instance.new("UIStroke")
   dropSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  dropSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  dropSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   dropSlideStroke.Thickness = 1.5
   dropSlideStroke.Transparency = 0.1
   dropSlideStroke.Parent = dropSlide
   local dropSlideGradient = Instance.new("UIGradient")
   dropSlideGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   dropSlideGradient.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -14545,7 +14544,7 @@ _G._AmousBuildLookAtRadiusSelector = function(row, parentFrame)
   laeHolder.Visible = false
   laeHolder.Parent = parentFrame
   corner(laeHolder, 14)
-  stroke(laeHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(laeHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(laeHolder, nil, "soft")
 
   local laeLabel = Instance.new("TextLabel")
@@ -14639,7 +14638,7 @@ _G._AmousBuildTPDownMethodSelector = function(parentFrame, rowOrder, holderOrder
   holder.Visible = false
   holder.Parent = parentFrame
   corner(holder, 14)
-  stroke(holder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(holder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(holder, nil, "soft")
 
   -- Tre segmenti: NORMAL, SLOW FALL, ZIGZAG.
@@ -14650,7 +14649,7 @@ _G._AmousBuildTPDownMethodSelector = function(parentFrame, rowOrder, holderOrder
 
   local slide = Instance.new("Frame")
   slide.Name = "SelectedSlide"
-  slide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  slide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   slide.BackgroundTransparency = 0.1
   slide.Size = UDim2.new(tpmW, -8, 1, -8)
   slide.Position = UDim2.new(0, 4, 0, 4)
@@ -14660,15 +14659,15 @@ _G._AmousBuildTPDownMethodSelector = function(parentFrame, rowOrder, holderOrder
   corner(slide, 13)
   local slideStroke = Instance.new("UIStroke")
   slideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  slideStroke.Color = Color3.fromRGB(216, 180, 254)
+  slideStroke.Color = Color3.fromRGB(249, 249, 249)
   slideStroke.Thickness = 1.5
   slideStroke.Transparency = 0.1
   slideStroke.Parent = slide
   local slideGrad = Instance.new("UIGradient")
   slideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   slideGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -14747,7 +14746,7 @@ end
 -- La riga vive nella sezione TELEPORT (LayoutOrder 10.5/10.6), ma la
 -- chiamata deve stare DOPO la definizione del builder, non prima.
 -- Sopra Auto TP Down (9): riga 8 + holder 8, subito dopo la sezione TELEPORT (8).
-_G._AmousBuildTPDownMethodSelector(Movement, 8, 8)
+if false then _G._AmousBuildTPDownMethodSelector(Movement, 8, 8) end
 -- <<< TP DOWN METHOD END
 
 -- ===== BUILDER JUMP MODE SELECTOR (funzione separata per non saturare i local del chunk) =====
@@ -14785,12 +14784,12 @@ _G._AmousBuildJumpModeSelector = function(row, parentFrame)
   jumpModeHolder.Visible = false
   jumpModeHolder.Parent = parentFrame
   corner(jumpModeHolder, 14)
-  stroke(jumpModeHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(jumpModeHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(jumpModeHolder, nil, "soft")
 
   local jumpModeSlide = Instance.new("Frame")
   jumpModeSlide.Name = "SelectedSlide"
-  jumpModeSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  jumpModeSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   jumpModeSlide.BackgroundTransparency = 0.1
   jumpModeSlide.Size = UDim2.new(0.5, -3, 1, -8)
   jumpModeSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -14806,9 +14805,9 @@ _G._AmousBuildJumpModeSelector = function(row, parentFrame)
   jmsStroke.Parent = jumpModeSlide
   local jmsGrad = Instance.new("UIGradient")
   jmsGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   jmsGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -14936,12 +14935,12 @@ do
   irHolder.Visible = false
   irHolder.Parent = Movement
   corner(irHolder, 14)
-  stroke(irHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(irHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(irHolder, nil, "soft")
 
   local irSlide = Instance.new("Frame")
   irSlide.Name = "SelectedSlide"
-  irSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  irSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   irSlide.BackgroundTransparency = 0.1
   irSlide.Size = UDim2.new(0.5, -8, 1, -8)
   irSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -14951,15 +14950,15 @@ do
   corner(irSlide, 13)
   local irSlideStroke = Instance.new("UIStroke")
   irSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  irSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  irSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   irSlideStroke.Thickness = 1.5
   irSlideStroke.Transparency = 0.1
   irSlideStroke.Parent = irSlide
   local irSlideGrad = Instance.new("UIGradient")
   irSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   irSlideGrad.Rotation = 22
   irSlideGrad.Parent = irSlide
@@ -15047,7 +15046,7 @@ _G._AmousBuildDropMethodSelector(Movement, 13, 13)
 -- Toggle + freccetta (stile Drop Method). LayoutOrder 13 come la riga
 -- Drop Method ma creata dopo: a parita' di ordine il UIListLayout segue
 -- l'inserimento, quindi finisce sotto quella e sopra Infinite Jump (14).
-do
+if false then
   local AD_MODES = {"AIMBOT", "TPBAT"}
   local adRow, setADVisual = toggleRow(Movement, "Auto After Drop",
     _G.AmousAfterDrop.enabled == true, 13)
@@ -15064,12 +15063,12 @@ do
   adHolder.Visible = false
   adHolder.Parent = Movement
   corner(adHolder, 14)
-  stroke(adHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(adHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(adHolder, nil, "soft")
 
   local adSlide = Instance.new("Frame")
   adSlide.Name = "SelectedSlide"
-  adSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  adSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   adSlide.BackgroundTransparency = 0.1
   adSlide.Size = UDim2.new(0.5, -8, 1, -8)
   adSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -15079,15 +15078,15 @@ do
   corner(adSlide, 13)
   local adSlideStroke = Instance.new("UIStroke")
   adSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  adSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  adSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   adSlideStroke.Thickness = 1.5
   adSlideStroke.Transparency = 0.1
   adSlideStroke.Parent = adSlide
   local adSlideGrad = Instance.new("UIGradient")
   adSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   adSlideGrad.Rotation = 22
   adSlideGrad.Parent = adSlide
@@ -15250,12 +15249,12 @@ _G._AmousBuildAntiRagdollModeSelector = function(row, parentFrame)
   arHolder.Visible = false
   arHolder.Parent = parentFrame
   corner(arHolder, 14)
-  stroke(arHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(arHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(arHolder, nil, "soft")
 
   local arSlide = Instance.new("Frame")
   arSlide.Name = "SelectedSlide"
-  arSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  arSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   arSlide.BackgroundTransparency = 0.1
   arSlide.Size = UDim2.new(0.5, -3, 1, -8)
   arSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -15265,15 +15264,15 @@ _G._AmousBuildAntiRagdollModeSelector = function(row, parentFrame)
   corner(arSlide, 13)
   local arSlideStroke = Instance.new("UIStroke")
   arSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  arSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  arSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   arSlideStroke.Thickness = 1.5
   arSlideStroke.Transparency = 0.1
   arSlideStroke.Parent = arSlide
   local arSlideGrad = Instance.new("UIGradient")
   arSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   arSlideGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -15401,6 +15400,7 @@ end
 -- >>> TP RAGDOLL <<<
 -- Stesso ordine dell'Anti Ragdoll: a parita' di LayoutOrder conta l'ordine
 -- di creazione, e questa nasce dopo, quindi finisce subito sotto.
+if false then
 _, _SV.setTPRagdollVisual = toggleRow(Movement, "TP Ragdoll", _G.AmousTPRagdollEnabled == true, 16)
 do
   local row = Movement:FindFirstChild("TP Ragdoll")
@@ -15416,6 +15416,7 @@ do
       saveAmousConfig()
     end)
   end
+end
 end
 
 _, _SV.setAntiDieVisual = toggleRow(Movement, "Anti Die", antiDieEnabled, 17)
@@ -15607,7 +15608,7 @@ _G._AmousBuildColorPickerRow = function(cfg)
   -- ---- BOTTONE PICK ----
   local btnHolder = Instance.new("Frame")
   btnHolder.Name = "ColorButtonHolder"
-  btnHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  btnHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   btnHolder.BackgroundTransparency = 0.28
   btnHolder.BorderSizePixel = 0
   btnHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -15616,13 +15617,13 @@ _G._AmousBuildColorPickerRow = function(cfg)
   btnHolder.ZIndex = 6
   btnHolder.Parent = row
   corner(btnHolder, 15)
-  stroke(btnHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+  stroke(btnHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
   local pickGrad = Instance.new("UIGradient")
   pickGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   pickGrad.Rotation = 18
   pickGrad.Parent = btnHolder
@@ -15986,12 +15987,12 @@ end)
   semiSubHolder.Visible = selectedStealMode == "Semi"
   semiSubHolder.Parent = Combat
   corner(semiSubHolder, 14)
-  stroke(semiSubHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(semiSubHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(semiSubHolder, nil, "soft")
 
   local subSlide = Instance.new("Frame")
   subSlide.Name = "SelectedSlide"
-  subSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  subSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   subSlide.BackgroundTransparency = 0.1
   subSlide.Size = UDim2.new(1/3, -3, 1, -8)
   subSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -16001,15 +16002,15 @@ end)
   corner(subSlide, 13)
   local subSlideStroke = Instance.new("UIStroke")
   subSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  subSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  subSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   subSlideStroke.Thickness = 1.5
   subSlideStroke.Transparency = 0.1
   subSlideStroke.Parent = subSlide
   local subSlideGradient = Instance.new("UIGradient")
   subSlideGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   subSlideGradient.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -16441,12 +16442,12 @@ _G._AmousBuildAimbotChaseSelector = function(parent, key, titleText, order)
   holder.Visible = (selectedAimbotMode == key)
   holder.Parent = parent
   corner(holder, 14)
-  stroke(holder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(holder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(holder, nil, "soft")
 
   local slide = Instance.new("Frame")
   slide.Name = "SelectedSlide"
-  slide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  slide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   slide.BackgroundTransparency = 0.1
   slide.Size = UDim2.new(0.5, -3, 1, -8)
   slide.Position = UDim2.new(0, 4, 0, 4)
@@ -16456,15 +16457,15 @@ _G._AmousBuildAimbotChaseSelector = function(parent, key, titleText, order)
   corner(slide, 13)
   local slideStroke = Instance.new("UIStroke")
   slideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  slideStroke.Color = Color3.fromRGB(216, 180, 254)
+  slideStroke.Color = Color3.fromRGB(249, 249, 249)
   slideStroke.Thickness = 1.5
   slideStroke.Transparency = 0.1
   slideStroke.Parent = slide
   local slideGrad = Instance.new("UIGradient")
   slideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   slideGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -16681,12 +16682,12 @@ section(Combat, "TP BAT", 10)
   tpvVerHolder.ClipsDescendants = true
   tpvVerHolder.Parent = tpvHolder
   corner(tpvVerHolder, 14)
-  stroke(tpvVerHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(tpvVerHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(tpvVerHolder, nil, "soft")
 
   local tpvSlide = Instance.new("Frame")
   tpvSlide.Name = "TPBatVersionSlide"
-  tpvSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  tpvSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   tpvSlide.BackgroundTransparency = 0.1
   tpvSlide.AnchorPoint = Vector2.new(0.5, 0.5)
   tpvSlide.Size = UDim2.new(tpvSegW, -4, 1, -8)
@@ -16697,15 +16698,15 @@ section(Combat, "TP BAT", 10)
   corner(tpvSlide, 13)
   local tpvSlideStroke = Instance.new("UIStroke")
   tpvSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  tpvSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  tpvSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   tpvSlideStroke.Thickness = 1.5
   tpvSlideStroke.Transparency = 0.1
   tpvSlideStroke.Parent = tpvSlide
   local tpvSlideGrad = Instance.new("UIGradient")
   tpvSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   tpvSlideGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -16848,12 +16849,12 @@ _G._AmousBuildBatCounterModeSelector = function(row, parentFrame)
   batModeHolder.Visible = false
   batModeHolder.Parent = parentFrame
   corner(batModeHolder, 14)
-  stroke(batModeHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(batModeHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(batModeHolder, nil, "soft")
 
   local batModeSlide = Instance.new("Frame")
   batModeSlide.Name = "SelectedSlide"
-  batModeSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  batModeSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   batModeSlide.BackgroundTransparency = 0.1
   batModeSlide.Size = UDim2.new(0.5, -3, 1, -8)
   batModeSlide.Position = UDim2.new(0, 4, 0, 4)
@@ -16869,9 +16870,9 @@ _G._AmousBuildBatCounterModeSelector = function(row, parentFrame)
   bmsStroke.Parent = batModeSlide
   local bmsGrad = Instance.new("UIGradient")
   bmsGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   bmsGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -17096,7 +17097,7 @@ end
 
   local spamFill = Instance.new("Frame")
   spamFill.Name = "Fill"
-  spamFill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  spamFill.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   spamFill.BackgroundTransparency = 1
   spamFill.Size = UDim2.new(1, 0, 1, 0)
   spamFill.BorderSizePixel = 0
@@ -17105,9 +17106,9 @@ end
   corner(spamFill, 11)
   local spamFillGrad = Instance.new("UIGradient")
   spamFillGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   spamFillGrad.Rotation = 18
   spamFillGrad.Parent = spamFill
@@ -17196,12 +17197,12 @@ end
   verHolder.ClipsDescendants = true
   verHolder.Parent = atpHolder
   corner(verHolder, 14)
-  stroke(verHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+  stroke(verHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
   _G._AmousRegAccent(verHolder, nil, "soft")
 
   local verSlide = Instance.new("Frame")
   verSlide.Name = "AntiTPBatSlide"
-  verSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  verSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   verSlide.BackgroundTransparency = 0.1
   verSlide.AnchorPoint = Vector2.new(0.5, 0.5)
   verSlide.Size = UDim2.new(1 / ATP_N, -4, 1, -8)
@@ -17212,15 +17213,15 @@ end
   corner(verSlide, 13)
   local verSlideStroke = Instance.new("UIStroke")
   verSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  verSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+  verSlideStroke.Color = Color3.fromRGB(249, 249, 249)
   verSlideStroke.Thickness = 1.5
   verSlideStroke.Transparency = 0.1
   verSlideStroke.Parent = verSlide
   local verSlideGrad = Instance.new("UIGradient")
   verSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   verSlideGrad.Transparency = NumberSequence.new({
     NumberSequenceKeypoint.new(0, 0.08),
@@ -17407,7 +17408,7 @@ do
   THEME_ACCENT = THEME_ACCENT or Color3.fromRGB(230, 230, 230)
   THEME_ACCENT_DIM = THEME_ACCENT_DIM or Color3.fromRGB(145, 145, 145)
   PlayerESP = PlayerESP or {enabled=false, playerData={}, conns={}, discordText="discord.gg/amouss"}
-  BoxedESPOptions = BoxedESPOptions or {box=false, tracker=false, trackerColor=Color3.fromRGB(230,230,230)}
+  BoxedESPOptions = BoxedESPOptions or {box=false, tracker=false, trackerColor=Color3.fromRGB(255,255,255)}
   BoxedESPData = BoxedESPData or {}
   BoxedESPConn = BoxedESPConn or nil
   stretchRezConn = stretchRezConn or nil
@@ -17462,9 +17463,9 @@ function startPlayerESP()
         speedGrad.Rotation = 0
         speedGrad.Transparency = NumberSequence.new(0)
         speedGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-            ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-            ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+            ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+            ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+            ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
         })
 
         local conn = RunService.Heartbeat:Connect(function()
@@ -19771,7 +19772,7 @@ function __AmousDuelsSetupVisualsUI()
 
     local holder = Instance.new("Frame")
     holder.Name = "SkyValueHolder"
-    holder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    holder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     holder.BackgroundTransparency = 0.28
     holder.BorderSizePixel = 0
     holder.Size = UDim2.new(0, 124, 0, 30)
@@ -19780,13 +19781,13 @@ function __AmousDuelsSetupVisualsUI()
     holder.ZIndex = 7
     holder.Parent = row
     corner(holder, 15)
-    stroke(holder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(holder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local skyHolderGrad = Instance.new("UIGradient")
     skyHolderGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     skyHolderGrad.Rotation = 18
     skyHolderGrad.Parent = holder
@@ -20132,7 +20133,7 @@ function __AmousDuelsSetupVisualsUI()
   end
 
   -- Tracker Color Picker (tendina della riga Show Tracker)
-  do
+  if false then
     local function updateTrackerColor(newColor)
       BoxedESPOptions.trackerColor = newColor
       for _, data in pairs(BoxedESPData or {}) do
@@ -20228,7 +20229,7 @@ function __AmousDuelsSetupVisualsUI()
     vividChangerRow.ClipsDescendants = true
     vividChangerRow.Visible = false
 
-    do
+    if false then
       local vividExpanded = false
       local vividArrow = Instance.new("TextButton")
       vividArrow.Name = "VividChangerArrow"
@@ -20258,7 +20259,7 @@ function __AmousDuelsSetupVisualsUI()
     -- PICK button dentro la tendina
     local vividBtnHolder = Instance.new("Frame")
     vividBtnHolder.Name = "VividButtonHolder"
-    vividBtnHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    vividBtnHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     vividBtnHolder.BackgroundTransparency = 0.28
     vividBtnHolder.BorderSizePixel = 0
     vividBtnHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -20267,13 +20268,13 @@ function __AmousDuelsSetupVisualsUI()
     vividBtnHolder.ZIndex = 9
     vividBtnHolder.Parent = vividChangerRow
     corner(vividBtnHolder, 15)
-    stroke(vividBtnHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(vividBtnHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local vividPickGrad = Instance.new("UIGradient")
     vividPickGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     vividPickGrad.Rotation = 18
     vividPickGrad.Parent = vividBtnHolder
@@ -20524,7 +20525,7 @@ function __AmousDuelsSetupVisualsUI()
       -- RESET TO DEFAULT footer
       local resetHolder = Instance.new("Frame")
       resetHolder.Name = "ResetHolder"
-      resetHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+      resetHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
       resetHolder.BackgroundTransparency = 0
       resetHolder.BorderSizePixel = 0
       resetHolder.Size = UDim2.new(1, -24, 0, 36)
@@ -20532,13 +20533,13 @@ function __AmousDuelsSetupVisualsUI()
       resetHolder.ZIndex = 4
       resetHolder.Parent = pickerFrame
       corner(resetHolder, 18)
-      stroke(resetHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+      stroke(resetHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
       local vividResetGrad = Instance.new("UIGradient")
       vividResetGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
       })
       vividResetGrad.Rotation = 18
       vividResetGrad.Parent = resetHolder
@@ -20699,7 +20700,7 @@ function __AmousDuelsSetupVisualsUI()
 
     local uakFill = Instance.new("Frame")
     uakFill.Name = "Fill"
-    uakFill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    uakFill.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     uakFill.BackgroundTransparency = (_G.AmousUAKEnabled == true) and 0 or 1
     uakFill.Size = UDim2.new(1, 0, 1, 0)
     uakFill.BorderSizePixel = 0
@@ -20708,9 +20709,9 @@ function __AmousDuelsSetupVisualsUI()
     corner(uakFill, 11)
     local uakFillGrad = Instance.new("UIGradient")
     uakFillGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     uakFillGrad.Rotation = 18
     uakFillGrad.Parent = uakFill
@@ -20728,7 +20729,7 @@ function __AmousDuelsSetupVisualsUI()
     local uakKnobStroke = Instance.new("UIStroke")
     uakKnobStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     uakKnobStroke.Color = (_G.AmousUAKEnabled == true)
-      and Color3.fromRGB(216, 180, 254) or Color3.fromRGB(120, 120, 135)
+      and Color3.fromRGB(249, 249, 249) or Color3.fromRGB(120, 120, 135)
     uakKnobStroke.Thickness = 1.4
     uakKnobStroke.Transparency = 0.15
     uakKnobStroke.Parent = uakKnob
@@ -20789,6 +20790,7 @@ function __AmousDuelsSetupVisualsUI()
     uakPaint(_G.AmousUAKEnabled == true)
 
     -- ---- freccetta sulla riga Kick Warning ----
+    if false then
     local kwArrow = Instance.new("TextButton")
     kwArrow.Name = "KickWarningArrow"
     kwArrow.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
@@ -20813,6 +20815,7 @@ function __AmousDuelsSetupVisualsUI()
       kwExpanded = not kwExpanded
       _G._AmousExpand(kwHolder, kwExpanded, 38, kwArrow)
     end)
+    end
 
     local _kwBtn = rowKW and rowKW:FindFirstChild("ToggleButton")
     if _kwBtn then
@@ -20833,7 +20836,7 @@ function __AmousDuelsSetupVisualsUI()
 
   -- High Ping Warning subito sotto il Kick Warning e la sua tendina:
   -- stesso LayoutOrder 8, creata dopo.
-  do
+  if false then
     local rowHPW, setVisualHPW = toggleRow(Utility, "High Ping Warning", highPingWarningEnabled, 8)
     _SV.setHighPingWarningVisual = setVisualHPW
     local _hpwBtn = rowHPW and rowHPW:FindFirstChild("ToggleButton")
@@ -20878,13 +20881,13 @@ function __AmousDuelsSetupVisualsUI()
     animPackHolder.ClipsDescendants = true
     animPackHolder.Parent = Utility
     corner(animPackHolder, 14)
-    stroke(animPackHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+    stroke(animPackHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
     _G._AmousRegAccent(animPackHolder, nil, "soft")
 
     -- Slide indicator (si muove orizzontalmente)
     local animSlide = Instance.new("Frame")
     animSlide.Name = "AnimSlide"
-    animSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    animSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     animSlide.BackgroundTransparency = 0.1
     animSlide.AnchorPoint = Vector2.new(0.5, 0.5)
     animSlide.Size = UDim2.new(1/NUM_PACKS, -4, 1, -8)
@@ -20895,15 +20898,15 @@ function __AmousDuelsSetupVisualsUI()
     corner(animSlide, 13)
     local animSlideStroke = Instance.new("UIStroke")
     animSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    animSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+    animSlideStroke.Color = Color3.fromRGB(249, 249, 249)
     animSlideStroke.Thickness = 1.5
     animSlideStroke.Transparency = 0.1
     animSlideStroke.Parent = animSlide
     local animSlideGrad = Instance.new("UIGradient")
     animSlideGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     animSlideGrad.Transparency = NumberSequence.new({
       NumberSequenceKeypoint.new(0, 0.08),
@@ -21018,7 +21021,7 @@ function __AmousDuelsSetupVisualsUI()
 
     local capHolder = Instance.new("Frame")
     capHolder.Name = "CustomAnimBtnHolder"
-    capHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    capHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     capHolder.BackgroundTransparency = 0.28
     capHolder.BorderSizePixel = 0
     capHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -21027,13 +21030,13 @@ function __AmousDuelsSetupVisualsUI()
     capHolder.ZIndex = 6
     capHolder.Parent = capRow
     corner(capHolder, 15)
-    stroke(capHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(capHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local capGrad = Instance.new("UIGradient")
     capGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     capGrad.Rotation = 18
     capGrad.Parent = capHolder
@@ -22366,7 +22369,7 @@ function __AmousDuelsSetupVisualsUI()
 
       local fill=Instance.new("Frame")
       fill.Name="Fill"
-      fill.BackgroundColor3=Color3.fromRGB(147, 51, 234)
+      fill.BackgroundColor3=Color3.fromRGB(166, 166, 166)
       fill.BackgroundTransparency=entry.enabled and 0 or 1
       fill.Size=UDim2.new(1,0,1,0)
       fill.BorderSizePixel=0
@@ -22375,9 +22378,9 @@ function __AmousDuelsSetupVisualsUI()
       corner(fill,11)
       local acFillGrad=Instance.new("UIGradient")
       acFillGrad.Color=ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
       })
       acFillGrad.Rotation=18
       acFillGrad.Parent=fill
@@ -22393,7 +22396,7 @@ function __AmousDuelsSetupVisualsUI()
       corner(knob,999)
       local knobStroke=Instance.new("UIStroke")
       knobStroke.ApplyStrokeMode=Enum.ApplyStrokeMode.Border
-      knobStroke.Color=entry.enabled and Color3.fromRGB(216, 180, 254) or Color3.fromRGB(120, 120, 135)
+      knobStroke.Color=entry.enabled and Color3.fromRGB(249, 249, 249) or Color3.fromRGB(120, 120, 135)
       knobStroke.Thickness=1.4
       knobStroke.Transparency=0.15
       knobStroke.Parent=knob
@@ -22470,7 +22473,7 @@ function __AmousDuelsSetupVisualsUI()
       -- PICK button stile Tracker Color (holder scuro + testo bianco)
       local pickHolder=Instance.new("Frame")
       pickHolder.Name="PickHolder"
-      pickHolder.BackgroundColor3=Color3.fromRGB(147, 51, 234)
+      pickHolder.BackgroundColor3=Color3.fromRGB(166, 166, 166)
       pickHolder.BackgroundTransparency=0.28
       pickHolder.BorderSizePixel=0
       pickHolder.Size=UDim2.new(0,48,0,26)
@@ -22479,13 +22482,13 @@ function __AmousDuelsSetupVisualsUI()
       pickHolder.ZIndex=8
       pickHolder.Parent=subRow
       corner(pickHolder,13)
-      stroke(pickHolder,Color3.fromRGB(216, 180, 254),1.5,0.15)
+      stroke(pickHolder,Color3.fromRGB(249, 249, 249),1.5,0.15)
 
       local pickGradAc = Instance.new("UIGradient")
       pickGradAc.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
       })
       pickGradAc.Rotation = 18
       pickGradAc.Parent = pickHolder
@@ -22634,7 +22637,7 @@ function __AmousDuelsSetupVisualsUI()
 
     local ctBtnHolder = Instance.new("Frame")
     ctBtnHolder.Name = "CustomToolsPickHolder"
-    ctBtnHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    ctBtnHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     ctBtnHolder.BackgroundTransparency = 0.28
     ctBtnHolder.BorderSizePixel = 0
     ctBtnHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -22643,13 +22646,13 @@ function __AmousDuelsSetupVisualsUI()
     ctBtnHolder.ZIndex = 9
     ctBtnHolder.Parent = ctSelRow
     corner(ctBtnHolder, 15)
-    stroke(ctBtnHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(ctBtnHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local ctGrad = Instance.new("UIGradient")
     ctGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     ctGrad.Rotation = 18
     ctGrad.Parent = ctBtnHolder
@@ -23173,12 +23176,12 @@ do
     segHolder.Visible = false
     segHolder.Parent = Utility
     corner(segHolder, 14)
-    stroke(segHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+    stroke(segHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
     _G._AmousRegAccent(segHolder, nil, "soft")
 
     local segSlide = Instance.new("Frame")
     segSlide.Name = "SelectedSlide"
-    segSlide.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    segSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     segSlide.BackgroundTransparency = 0.1
     segSlide.AnchorPoint = Vector2.new(0.5, 0.5)
     segSlide.Size = UDim2.new(1 / SEG_N, -4, 1, -8)
@@ -23189,15 +23192,15 @@ do
     corner(segSlide, 13)
     local segSlideStroke = Instance.new("UIStroke")
     segSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    segSlideStroke.Color = Color3.fromRGB(216, 180, 254)
+    segSlideStroke.Color = Color3.fromRGB(249, 249, 249)
     segSlideStroke.Thickness = 1.5
     segSlideStroke.Transparency = 0.1
     segSlideStroke.Parent = segSlide
     local segSlideGrad = Instance.new("UIGradient")
     segSlideGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     segSlideGrad.Rotation = 22
     segSlideGrad.Parent = segSlide
@@ -23445,7 +23448,7 @@ do
     fovHolder.Visible = false
     fovHolder.Parent = Utility
     corner(fovHolder, 14)
-    stroke(fovHolder, Color3.fromRGB(126, 71, 190), 1.4, 0.32)
+    stroke(fovHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
     _G._AmousRegAccent(fovHolder, nil, "soft")
 
     local fovLabel = Instance.new("TextLabel")
@@ -23507,6 +23510,7 @@ end
 
 -- >>> RAINBOW MOBILE JOYSTICK BEGIN
 -- ===== RAINBOW MOBILE JOYSTICK =====
+if false then
 section(Utility, "RAINBOW MOBILE JOYSTICK", 18)
 do
     local row, setVisual = toggleRow(Utility, "Rainbow Mobile Joystick",
@@ -23524,6 +23528,7 @@ do
         end)
     end
     if setVisual then setVisual(_G.AmousRainbowJoystickEnabled == true) end
+end
 end
 -- <<< RAINBOW MOBILE JOYSTICK END
 end -- chiude __AmousDuelsSetupVisualsUI
@@ -23688,7 +23693,7 @@ _G.__AmousDuelsSetupSettingsUI = function()
 
       local fill = Instance.new("Frame")
       fill.Name = "Fill"
-      fill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+      fill.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
       fill.BackgroundTransparency = startOn and 0 or 1
       fill.Size = UDim2.new(1, 0, 1, 0)
       fill.BorderSizePixel = 0
@@ -23697,9 +23702,9 @@ _G.__AmousDuelsSetupSettingsUI = function()
       corner(fill, 11)
       local fillGrad = Instance.new("UIGradient")
       fillGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
       })
       fillGrad.Rotation = 18
       fillGrad.Parent = fill
@@ -23715,7 +23720,7 @@ _G.__AmousDuelsSetupSettingsUI = function()
       corner(knob, 999)
       local knobStroke = Instance.new("UIStroke")
       knobStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-      knobStroke.Color = startOn and Color3.fromRGB(216, 180, 254) or Color3.fromRGB(120, 120, 135)
+      knobStroke.Color = startOn and Color3.fromRGB(249, 249, 249) or Color3.fromRGB(120, 120, 135)
       knobStroke.Thickness = 1.4
       knobStroke.Transparency = 0.15
       knobStroke.Parent = knob
@@ -23950,7 +23955,7 @@ makeImageButton(2, 84)  -- +68 rispetto al primo
     -- Holder stile Sky Theme per il bottone PICK
     local customBgBtnHolder = Instance.new("Frame")
     customBgBtnHolder.Name = "CustomBgBtnHolder"
-    customBgBtnHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    customBgBtnHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     customBgBtnHolder.BackgroundTransparency = 0.28
     customBgBtnHolder.BorderSizePixel = 0
     customBgBtnHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -23959,13 +23964,13 @@ makeImageButton(2, 84)  -- +68 rispetto al primo
     customBgBtnHolder.ZIndex = 6
     customBgBtnHolder.Parent = customBgRow
     corner(customBgBtnHolder, 15)
-    stroke(customBgBtnHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(customBgBtnHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local customBgPickGrad = Instance.new("UIGradient")
     customBgPickGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     customBgPickGrad.Rotation = 18
     customBgPickGrad.Parent = customBgBtnHolder
@@ -25028,7 +25033,7 @@ end
     -- Holder del PICK, stesso stile della Custom Background.
     local tpHolder = Instance.new("Frame")
     tpHolder.Name = "TabPosBtnHolder"
-    tpHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    tpHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     tpHolder.BackgroundTransparency = 0.28
     tpHolder.BorderSizePixel = 0
     tpHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -25037,13 +25042,13 @@ end
     tpHolder.ZIndex = 6
     tpHolder.Parent = tabPosRow
     corner(tpHolder, 15)
-    stroke(tpHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(tpHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local tpGrad = Instance.new("UIGradient")
     tpGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     tpGrad.Rotation = 18
     tpGrad.Parent = tpHolder
@@ -25408,13 +25413,14 @@ end
   -- Riga con PICK, stessa forma di Tab Position, creata subito dopo con
   -- lo stesso LayoutOrder: a parita' di ordine il UIListLayout segue
   -- l'inserimento, quindi finisce sotto.
-  ;(function()
+  if false then
+  (function()
     local cfRow = baseRow(Settings, "Custom Fonts", 3)
     cfRow.Size = UDim2.new(1, -4, 0, 42)
 
     local cfHolder = Instance.new("Frame")
     cfHolder.Name = "CustomFontsBtnHolder"
-    cfHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    cfHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     cfHolder.BackgroundTransparency = 0.28
     cfHolder.BorderSizePixel = 0
     cfHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -25423,13 +25429,13 @@ end
     cfHolder.ZIndex = 6
     cfHolder.Parent = cfRow
     corner(cfHolder, 15)
-    stroke(cfHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(cfHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local cfGrad = Instance.new("UIGradient")
     cfGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     cfGrad.Rotation = 18
     cfGrad.Parent = cfHolder
@@ -25744,6 +25750,7 @@ end
       }):Play()
     end)
   end)()
+  end
   -- ===== FINE CUSTOM FONTS ROW =====
 
   -- ===== TITLE STYLE ROW =====
@@ -25976,7 +25983,7 @@ end
     local row = baseRow(Settings, "Reset Mobile Buttons", 11)
     local mobResetBg = Instance.new("Frame")
     mobResetBg.Name = "ResetMobileButtonsBg"
-    mobResetBg.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    mobResetBg.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     mobResetBg.BackgroundTransparency = 0
     mobResetBg.BorderSizePixel = 0
     mobResetBg.Size = UDim2.new(0, 78, 0, 24)
@@ -25984,7 +25991,7 @@ end
     mobResetBg.ZIndex = 7
     mobResetBg.Parent = row
     corner(mobResetBg, 12)
-    stroke(mobResetBg, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(mobResetBg, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local button = Instance.new("TextButton")
     button.Name = "ResetMobileButtons"
@@ -26004,9 +26011,9 @@ end
 
     local mobResetGrad = Instance.new("UIGradient")
     mobResetGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     mobResetGrad.Rotation = 18
     mobResetGrad.Parent = mobResetBg
@@ -26078,7 +26085,7 @@ end
 
     local songBg = Instance.new("Frame")
     songBg.Name = "IntroSongBg"
-    songBg.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    songBg.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     songBg.BackgroundTransparency = 0
     songBg.BorderSizePixel = 0
     songBg.Size = UDim2.new(0, 120, 0, 30)
@@ -26087,7 +26094,7 @@ end
     songBg.ZIndex = 6
     songBg.Parent = row
     corner(songBg, 15)
-    stroke(songBg, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(songBg, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local btn = Instance.new("TextButton")
     btn.Name = "Intro Song Button"
@@ -26107,9 +26114,9 @@ end
 
     local songGrad = Instance.new("UIGradient")
     songGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     songGrad.Rotation = 18
     songGrad.Parent = songBg
@@ -26145,7 +26152,7 @@ end
 
     local mpHolder = Instance.new("Frame")
     mpHolder.Name = "MusicPlayerButtonHolder"
-    mpHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+    mpHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
     mpHolder.BackgroundTransparency = 0.28
     mpHolder.BorderSizePixel = 0
     mpHolder.Size = UDim2.new(0, 66, 0, 30)
@@ -26154,13 +26161,13 @@ end
     mpHolder.ZIndex = 9
     mpHolder.Parent = mpRow
     corner(mpHolder, 15)
-    stroke(mpHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+    stroke(mpHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
     local mpPickGrad = Instance.new("UIGradient")
     mpPickGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     mpPickGrad.Rotation = 18
     mpPickGrad.Parent = mpHolder
@@ -26287,9 +26294,9 @@ local function _mpToggleRow(parent, labelText, getVal, setVal, yPos)
     -- Gradiente (sarà gestito da _G._AmousApplyAccent)
     local pillBgGrad = Instance.new("UIGradient")
     pillBgGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 100, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 220, 220)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
     })
     pillBgGrad.Rotation = 18
     pillBgGrad.Enabled = false
@@ -26318,7 +26325,7 @@ local function _mpToggleRow(parent, labelText, getVal, setVal, yPos)
 
     local function apply(v)
         local isGrey = _G._AmousAccentIsGrey and _G._AmousAccentIsGrey() or false
-        local onBase, onEdge = Color3.fromRGB(147, 51, 234), Color3.fromRGB(216, 180, 254)
+        local onBase, onEdge = Color3.fromRGB(166, 166, 166), Color3.fromRGB(249, 249, 249)
         if _G._AmousToggleOnColor then
             local b, e = _G._AmousToggleOnColor()
             if b then onBase = b end
@@ -26489,7 +26496,7 @@ end
 
       local barFill = Instance.new("Frame")
       barFill.Name = "ProgressFill"
-      barFill.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+      barFill.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
       barFill.BorderSizePixel = 0
       barFill.Size = UDim2.new(0, 0, 1, 0)
       barFill.ZIndex = 5
@@ -26497,8 +26504,8 @@ end
       corner(barFill, 3)
       local barGrad = Instance.new("UIGradient")
       barGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(166, 166, 166)),
       })
       barGrad.Parent = barFill
       _G._AmousRegAccent(barFill, barGrad, "button")
@@ -26544,7 +26551,7 @@ end
 
       local playHolder = Instance.new("Frame")
       playHolder.Name = "PlayHolder"
-      playHolder.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+      playHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
       playHolder.BorderSizePixel = 0
       playHolder.Size = UDim2.new(0, 58, 0, 46)
       playHolder.Position = UDim2.new(0.5, -29, 0, 2)
@@ -26552,13 +26559,13 @@ end
       playHolder.ZIndex = 6
       playHolder.Parent = ctrl
       corner(playHolder, 14)
-      stroke(playHolder, Color3.fromRGB(216, 180, 254), 1.5, 0.15)
+      stroke(playHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
 
       local playGrad = Instance.new("UIGradient")
       playGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
       })
       playGrad.Rotation = 18
       playGrad.Parent = playHolder
@@ -26795,7 +26802,7 @@ end
 
   local resetBg = Instance.new("Frame")
   resetBg.Name = "ResetBg"
-  resetBg.BackgroundColor3 = Color3.fromRGB(147, 51, 234)
+  resetBg.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
   resetBg.BackgroundTransparency = 0
   resetBg.BorderSizePixel = 0
   resetBg.Size = UDim2.new(1, -16, 0, 42)
@@ -26822,16 +26829,16 @@ end
 
   local resetGrad = Instance.new("UIGradient")
   resetGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(202, 148, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(101, 31, 190)),
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
   })
   resetGrad.Rotation = 18
   resetGrad.Parent = resetBg
 
   local resetStroke = Instance.new("UIStroke")
   resetStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  resetStroke.Color = Color3.fromRGB(216, 180, 254)
+  resetStroke.Color = Color3.fromRGB(249, 249, 249)
   resetStroke.Thickness = 1.5
   resetStroke.Transparency = 0.15
   resetStroke.Parent = resetBg
@@ -27075,7 +27082,7 @@ end
 
 -- Reset tracker color
 if BoxedESPOptions then
-    BoxedESPOptions.trackerColor = Color3.fromRGB(230, 230, 230)
+    BoxedESPOptions.trackerColor = Color3.fromRGB(255, 255, 255)
 end
 if _G.AmousColorPreview then
     _G.AmousColorPreview.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -27420,7 +27427,7 @@ _G.__AmousDuelsSetupStealBar = function()
   local RADIUS = 11
 
   local C = {
-    line   = Color3.fromRGB(140, 90, 235),
+    line   = Color3.fromRGB(178, 178, 178),
     txt    = Color3.fromRGB(246, 243, 255),
     txtDim = Color3.fromRGB(150, 143, 168),
     good   = Color3.fromRGB(130, 245, 160),
@@ -27429,10 +27436,10 @@ _G.__AmousDuelsSetupStealBar = function()
   }
 
   local GRAD_ACTIVE = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB( 88,  40, 210)),
-    ColorSequenceKeypoint.new(0.45, Color3.fromRGB(150,  70, 245)),
-    ColorSequenceKeypoint.new(0.78, Color3.fromRGB(224, 100, 255)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(255, 168, 240)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(130, 130, 130)),
+    ColorSequenceKeypoint.new(0.45, Color3.fromRGB(178, 178, 178)),
+    ColorSequenceKeypoint.new(0.78, Color3.fromRGB(222, 222, 222)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(221, 221, 221)),
   })
   local GRAD_IDLE = ColorSequence.new({
     ColorSequenceKeypoint.new(0.00, Color3.fromRGB( 60,  56,  78)),
@@ -27570,7 +27577,7 @@ _G.__AmousDuelsSetupStealBar = function()
 
   local bgSrcConn = nil
   local function syncBarBackground()
-    local src = hubBgSource()
+    local src = nil -- steal bar: no background image
     if src and src.Image and src.Image ~= "" then
       bgImage.Image = src.Image
       bgImage.Visible = true
@@ -27630,7 +27637,7 @@ _G.__AmousDuelsSetupStealBar = function()
   edge.AnchorPoint = Vector2.new(0.5, 0)
   edge.Size = UDim2.new(0, 2, 1, 0)
   edge.Position = UDim2.new(0, 0, 0, 0)
-  edge.BackgroundColor3 = Color3.fromRGB(255, 190, 250)
+  edge.BackgroundColor3 = Color3.fromRGB(232, 232, 232)
   edge.BackgroundTransparency = 1
   edge.BorderSizePixel = 0
   edge.ZIndex = 4
@@ -27662,9 +27669,9 @@ _G.__AmousDuelsSetupStealBar = function()
   local hubTitleGrad = Instance.new("UIGradient", hubTitleLbl)
   hubTitleGrad.Rotation = 0
   hubTitleGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 175, 250)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(190, 115, 255)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(125,  85, 245)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(227, 227, 227)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(215, 215, 215)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(174, 174, 174)),
   })
 
   -- ===================== SINISTRA: % sopra, STEAL sotto =====================
@@ -28163,9 +28170,9 @@ grad.Transparency = NumberSequence.new(0)
 
 -- Colori iniziali (galattici)
 grad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
 })
 
 -- Funzione per ruotare le tonalità (hue) di un colore
@@ -28242,9 +28249,9 @@ task.spawn(function()
         hueOffset = (hueOffset + speed) % 1
         
         -- Colori base (galattici) con tonalità spostata
-        local c1 = shiftHue(Color3.fromRGB(220, 100, 255), hueOffset)
-        local c2 = shiftHue(Color3.fromRGB(120, 60, 220), hueOffset)
-        local c3 = shiftHue(Color3.fromRGB(40, 20, 150), hueOffset)
+        local c1 = shiftHue(Color3.fromRGB(220, 220, 220), hueOffset)
+        local c2 = shiftHue(Color3.fromRGB(153, 153, 153), hueOffset)
+        local c3 = shiftHue(Color3.fromRGB(80, 80, 80), hueOffset)
         
         grad.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0.00, c1),
@@ -28278,9 +28285,9 @@ local lineTopGrad = Instance.new("UIGradient", lineTop)
 lineTopGrad.Rotation = 0
 lineTopGrad.Transparency = NumberSequence.new(0)
 lineTopGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
 })
 
 local lineBot = Instance.new("Frame", center)
@@ -28296,9 +28303,9 @@ local lineBotGrad = Instance.new("UIGradient", lineBot)
 lineBotGrad.Rotation = 0
 lineBotGrad.Transparency = NumberSequence.new(0)
 lineBotGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
 })
 
     local titleShadow = Instance.new("TextLabel", center)
@@ -28330,9 +28337,9 @@ local titleGrad = Instance.new("UIGradient", title)
 titleGrad.Rotation = 0
 titleGrad.Transparency = NumberSequence.new(0)
 titleGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
 })
 
 
@@ -28352,9 +28359,9 @@ local subGrad = Instance.new("UIGradient", subtitle)
 subGrad.Rotation = 0
 subGrad.Transparency = NumberSequence.new(0)
 subGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(200, 150, 255)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(150, 100, 230)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 60, 200)),
+    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(232, 232, 232)),
+    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(184, 184, 184)),
+    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(130, 130, 130)),
 })
 
 
@@ -29086,9 +29093,9 @@ local function makeButton(key, label, pos, onPress)
     txtGrad.Rotation = 0
     txtGrad.Transparency = NumberSequence.new(0)
     txtGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
     })
 
     -- Gradiente per lo SFONDO (acceso)
@@ -29097,9 +29104,9 @@ local function makeButton(key, label, pos, onPress)
     bgGrad.Rotation = 0
     bgGrad.Transparency = NumberSequence.new(0)
     bgGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 100, 255)),
-        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(120, 60, 220)),
-        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(40, 20, 150)),
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(220, 220, 220)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(153, 153, 153)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(80, 80, 80)),
     })
     bgGrad.Enabled = false  -- disabilitato di default
 
@@ -29108,7 +29115,7 @@ local function makeButton(key, label, pos, onPress)
     glow.Name = "Glow"
     glow.Size = UDim2.new(1, 4, 1, 4)
     glow.Position = UDim2.new(0, -2, 0, -2)
-    glow.BackgroundColor3 = Color3.fromRGB(180, 50, 255)
+    glow.BackgroundColor3 = Color3.fromRGB(186, 186, 186)
     glow.BackgroundTransparency = 0.9
     glow.BorderSizePixel = 0
     glow.ZIndex = 1000
