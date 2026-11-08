@@ -559,81 +559,58 @@ local antiLagVisualEnabled = false
 local headlessEnabled = false
 local korbloxEnabled = false
 
--- >>> ANTI DROP BEGIN (versione con raw metatable)
--- ============================================================
--- ANTI DROP
--- Sempre attivo, non si spegne: nessun toggle, nessun salvataggio.
--- Non tocca la velocita' reale, fa solo vedere al gioco 16 studs/s
--- qualunque sia la velocita' effettiva. Al movimento ci pensa la
--- root.Velocity dell'HRP (speed, jump, Anti Bat: tutti la' sopra).
--- checkcaller() fa passare intatte le scritture dell'hub.
--- ============================================================
+-- >>> MVP VELOCITY HOOK BEGIN (spoof portato dallo script MVP)
+-- Sostituisce l'Anti Drop di Amous. Hook sul metatable dell'HRP: le letture di
+-- Velocity / AssemblyLinearVelocity fatte dal gioco (checkcaller() == false)
+-- vengono limitate a 20 studs/s. Le letture e le scritture dell'hub passano intatte.
 do
-    local VS_FAKE = 16   -- velocita' mostrata al gioco (walkspeed normale)
-    local spoofedVelocity = Vector3.zero
-    -- Unico bersaglio: l'HRP. I due proxy (speed booster e infinite jump)
-    -- non esistono piu', ora si scrive tutto sulla root.Velocity, quindi i
-    -- loro nomi qui erano voci morte.
-    local SPOOF_NAMES = {
-        HumanoidRootPart = true,
-    }
-    local function isSpoofTarget(self)
-        if typeof(self) ~= "Instance" then return false end
-        if not self:IsA("BasePart") then return false end
-        if not SPOOF_NAMES[self.Name] then return false end
-        local char = LP.Character
-        return char ~= nil and self:IsDescendantOf(char)
-    end
-    -- Hook tramite raw metatable (più robusto e meno rilevabile)
+local _mvpVelHook = _G.__MVPVelocityHook or {hooked = false, roots = setmetatable({}, {__mode = "k"})}
+_G.__MVPVelocityHook = _mvpVelHook
+local function _mvpHookVelHRP(root)
+    if not root then return end
+    _mvpVelHook.roots[root] = true
+    if _mvpVelHook.hooked then return end
+    if type(getrawmetatable) ~= "function" or type(setreadonly) ~= "function"
+        or type(newcclosure) ~= "function" or type(checkcaller) ~= "function" then return end
     pcall(function()
-        if not (getrawmetatable and setreadonly and newcclosure and checkcaller) then
-            return
+        local mt = getrawmetatable(root)
+        if not mt then return end
+        local oldIndex = rawget(mt, "__index")
+        if type(oldIndex) ~= "function" and type(oldIndex) ~= "table" then return end
+        local function original(obj, key)
+            if type(oldIndex) == "function" then return oldIndex(obj, key) end
+            return oldIndex[key]
         end
-        local mt = getrawmetatable(game)
         setreadonly(mt, false)
-        local oldIndex = mt.__index
-        mt.__index = newcclosure(function(self, key)
-            if not checkcaller() and (key == "AssemblyLinearVelocity" or key == "Velocity") then
-                if isSpoofTarget(self) then
-                    return spoofedVelocity
-                end
+        mt.__index = newcclosure(function(obj, key)
+            if not checkcaller() and _mvpVelHook.roots[obj]
+                and (key == "AssemblyLinearVelocity" or key == "Velocity") then
+                local real = original(obj, key)
+                if real and real.Magnitude > 20 then return real.Unit * 20 end
+                return real
             end
-            return oldIndex(self, key)
-        end)
-        local oldNewIndex = mt.__newindex
-        mt.__newindex = newcclosure(function(self, key, value)
-            if not checkcaller() and (key == "AssemblyLinearVelocity" or key == "Velocity") then
-                if isSpoofTarget(self) then
-                    spoofedVelocity = value   -- memorizza il valore che l'hub vorrebbe scrivere
-                    return                     -- blocca la scrittura reale
-                end
-            end
-            return oldNewIndex(self, key, value)
+            return original(obj, key)
         end)
         setreadonly(mt, true)
+        _mvpVelHook.hooked = true
     end)
-    -- Aggiorna la velocità finta in base alla direzione di movimento
-    local function updateFakeVelocity()
-        local char = LP.Character
-        local hum  = char and char:FindFirstChildOfClass("Humanoid")
-        local root = char and char:FindFirstChild("HumanoidRootPart")
-        if not char or not hum or not root or hum.Health <= 0 then return end
-        local dir = hum.MoveDirection
-        if dir.Magnitude > 0.05 then
-            -- compatibilità con il client (opzionale)
-            pcall(function()
-                if root.SetNetworkOwner then root:SetNetworkOwner(LP) end
-            end)
-            local unit = dir.Unit
-            spoofedVelocity = Vector3.new(unit.X * VS_FAKE, root.Velocity.Y, unit.Z * VS_FAKE)
-        else
-            spoofedVelocity = Vector3.new(0, root.Velocity.Y, 0)
-        end
-    end
-    local sig = RunService.PreSimulation or RunService.Stepped
-    sig:Connect(updateFakeVelocity)
 end
--- <<< ANTI DROP END
+local function _mvpSetupVelChecked(character)
+    _mvpVelHook.roots = setmetatable({}, {__mode = "k"})
+    if not character then return nil end
+    local root = character:WaitForChild("HumanoidRootPart", 5)
+    if root then _mvpVelHook.roots[root] = true end
+    return root
+end
+if LP.Character then
+    task.spawn(function() _mvpHookVelHRP(_mvpSetupVelChecked(LP.Character)) end)
+end
+LP.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    _mvpHookVelHRP(_mvpSetupVelChecked(char))
+end)
+end
+-- <<< MVP VELOCITY HOOK END
 
 -- >>> ANTI BAT BEGIN
 -- ============================================================
@@ -11153,10 +11130,45 @@ do
   local _sbConn  = nil
   local _sbActive = false
 
+  -- >>> MVP SPEED ENGINE BEGIN (motore "Direct" dello script MVP)
+  -- Ogni frame: direzione = Humanoid.MoveDirection (se e' zero ma un tasto
+  -- di movimento e' ancora premuto si riusa l'ultima direzione), poi
+  -- AssemblyLinearVelocity = direzione * speed, con la Y lasciata al gioco.
+  -- Da fermo azzera X/Z. Si ferma durante ragdoll, auto left/right, drop,
+  -- TP Bat e aimbot, come fa MVP con i suoi blocked().
+  local MOVE_KEYS = {
+    [Enum.KeyCode.W] = true, [Enum.KeyCode.A] = true,
+    [Enum.KeyCode.S] = true, [Enum.KeyCode.D] = true,
+    [Enum.KeyCode.Up] = true, [Enum.KeyCode.Left] = true,
+    [Enum.KeyCode.Down] = true, [Enum.KeyCode.Right] = true,
+  }
+
+  local function _sbEngineBlocked()
+    return autoLeftEnabled or autoRightEnabled or dropActive or autoBatEnabled
+      or _G.AmousTPBatOn == true
+      or _G.AmousNormalAimbotOn == true
+      or _G.AmousBatAimbotV2On == true
+  end
+
+  local function _sbApplyVelocity(hrp, direction, speed)
+    if type(speed) ~= "number" or speed ~= speed or speed <= 0 or speed == math.huge then return end
+    local y = hrp.AssemblyLinearVelocity.Y
+    if direction and direction.Magnitude > 0.05 then
+      pcall(function() hrp:SetNetworkOwner(LP) end)
+      local unit = direction.Unit
+      hrp.AssemblyLinearVelocity = Vector3.new(unit.X * speed, y, unit.Z * speed)
+      -- Anti Bat riusa questa X/Z dopo ogni spike
+      _G._AmousAntiBatDesiredXZ = Vector3.new(unit.X * speed, 0, unit.Z * speed)
+    else
+      hrp.AssemblyLinearVelocity = Vector3.new(0, y, 0)
+      _G._AmousAntiBatDesiredXZ = nil
+    end
+  end
+
   local function _sbStart()
     if _sbConn then _sbConn:Disconnect(); _sbConn = nil end
     _sbActive = true
-    _sbConn = RunService.Heartbeat:Connect(function()
+    _sbConn = RunService.RenderStepped:Connect(function()
       if not _sbActive then
         _sbConn:Disconnect(); _sbConn = nil
         return
@@ -11168,43 +11180,36 @@ do
       local hum = char:FindFirstChildOfClass("Humanoid")
       if not hum then return end
       local state = hum:GetState()
-      if hum.PlatformStand
+      if hum.Health <= 0 or hum.PlatformStand
         or state == Enum.HumanoidStateType.Physics
         or state == Enum.HumanoidStateType.Ragdoll
         or state == Enum.HumanoidStateType.FallingDown then
         lastMoveDir = Vector3.new(0, 0, 0)
+        _G._AmousAntiBatDesiredXZ = nil
         return
       end
       local md = hum.MoveDirection
       local spd = getCurrentSpeedValue()
-      if not autoLeftEnabled and not autoRightEnabled and md.Magnitude > 0 then
-        lastMoveDir = md
-        -- >>> ROOT VELOCITY <<<
-        -- Percorso unico per tutti: si scrive la X/Z sulla root e si lascia
-        -- stare la Y, cosi' salto e caduta restano gestiti dal gioco.
-        -- Pubblica la X/Z desiderata: Anti Bat la riusa dopo ogni spike,
-        -- altrimenti si tornerebbe alla velocita' della walkspeed.
-        -- Durante lo ZigZag non si pubblica nemmeno la X/Z desiderata:
-        -- l'Anti Bat la riapplicherebbe dopo ogni spike, rimettendo la
-        -- direzione dei tasti al posto della deriva laterale.
-        if _G._AmousZigZagFalling then
-          _G._AmousAntiBatDesiredXZ = nil
-        else
-          _G._AmousAntiBatDesiredXZ = Vector3.new(md.X * spd, 0, md.Z * spd)
-        end
-        -- Mentre lo spike dell'Anti Bat e' attivo NON si scrive: altrimenti
-        -- la velocita' caotica verrebbe cancellata nello stesso frame e
-        -- l'Anti Bat non avrebbe effetto mentre ci si muove.
-        if not _G._AmousAntiBatSpiking and not _G._AmousZigZagFalling then
-          local curVel = hrp.Velocity
-          hrp.Velocity = Vector3.new(md.X * spd, curVel.Y, md.Z * spd)
-        end
-      end
-      -- >>> ANTI BAT BEGIN
-      if md.Magnitude <= 0 or autoLeftEnabled or autoRightEnabled then
+      if _sbEngineBlocked() then
+        lastMoveDir = Vector3.new(0, 0, 0)
         _G._AmousAntiBatDesiredXZ = nil
+      elseif _G._AmousZigZagFalling then
+        -- lo ZigZag del TP Down scrive la deriva laterale: qui non si tocca X/Z
+        _G._AmousAntiBatDesiredXZ = nil
+      elseif not _G._AmousAntiBatSpiking then
+        local direction = md
+        if direction.Magnitude > 0 then
+          lastMoveDir = direction
+        else
+          direction = nil
+          if lastMoveDir.Magnitude > 0 then
+            for key in pairs(MOVE_KEYS) do
+              if UserInputService:IsKeyDown(key) then direction = lastMoveDir; break end
+            end
+          end
+        end
+        _sbApplyVelocity(hrp, direction, spd)
       end
-      -- <<< ANTI BAT END
       -- Aggiorna overhead speed label
       if overheadSpeedLabel then
         local displaySpeed
@@ -11214,22 +11219,18 @@ do
           displaySpeed = _G.AmousGetBatAimbotV2Speed and _G.AmousGetBatAimbotV2Speed() or spd
         elseif autoLeftEnabled or autoRightEnabled then
           displaySpeed = _G.AmousAutoPathSpeed()
-        -- >>> ANTI BAT BEGIN
         elseif _G.AmousAntiBatEnabled then
-          -- Con Anti Bat la velocita' misurata schizza a migliaia per un frame:
-          -- si mostra la speed impostata invece di leggere l'HRP.
           displaySpeed = (md.Magnitude > 0) and spd or 0
-        -- <<< ANTI BAT END
         else
-            local vel = hrp.AssemblyLinearVelocity
-            local raw = Vector3.new(vel.X, 0, vel.Z).Magnitude
-            displaySpeed = raw > 200 and 0 or raw
+          local vel = hrp.AssemblyLinearVelocity
+          local raw = Vector3.new(vel.X, 0, vel.Z).Magnitude
+          displaySpeed = raw > 200 and 0 or raw
         end
-        -- (la root la scriviamo noi, quindi il valore letto e' gia' quello vero)
         overheadSpeedLabel.Text = string.format("%.1f", displaySpeed)
       end
     end)
   end
+  -- <<< MVP SPEED ENGINE END
 
   local function _sbStop()
     _sbActive = false
@@ -11664,7 +11665,7 @@ _G.AmousTitleStyles = {
     colors = { {0, 255,214,0}, {0.5, 255,90,40}, {1, 230,42,57} } },
 }
 _G.AmousMiniLogoStyle = { name = "Mini", font = Enum.Font.GothamBlack, size = 17, shimmer = false, stroke = {255, 255, 255}, strokeThickness = 0,
-  colors = { {0, 20,20,28}, {1, 90,60,200} } }
+  colors = { {0, 255,255,255}, {1, 255,255,255} } }
 
 _G.AmousLogoTweens = _G.AmousLogoTweens or setmetatable({}, { __mode = "k" })
 
@@ -11764,7 +11765,7 @@ MiniFrame.Size = UDim2.new(0, 130, 0, 35)
 local MINI_DEFAULT_POSITION = UDim2.new(0, 132, 0, 112)
 MiniFrame.Position = MINI_DEFAULT_POSITION
 savedMiniPositionTable = nil
-MiniFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MiniFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 MiniFrame.BackgroundTransparency = 0
 MiniFrame.BorderSizePixel = 0
 MiniFrame.Visible = false
@@ -11780,7 +11781,7 @@ MiniButton.Size = UDim2.new(1, 0, 1, 0)
 MiniButton.Position = UDim2.new(0, 0, 0, 0)
 MiniButton.BackgroundTransparency = 1
 MiniButton.Text = ""
-MiniButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+MiniButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 MiniButton.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 MiniButton.TextStrokeTransparency = 1
 MiniButton.TextSize = 17
