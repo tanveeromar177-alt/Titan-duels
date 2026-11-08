@@ -25019,7 +25019,7 @@ end
   -- ===== TAB POSITION ROW =====
   -- >>> TAB POSITION BEGIN
   if false then -- [removed UI: Tab Position]
-  ;(function()
+  (function()
     local TP_ORDER = { "Up", "Bottom", "Left", "Right" }
 
     local tabPosRow = baseRow(Settings, "Tab Position", 3)
@@ -25756,7 +25756,7 @@ end
   -- di LayoutOrder il UIListLayout rispetta l'ordine di inserimento, quindi
   -- finisce esattamente sotto.
   if false then -- [removed UI: Title Style]
-  ;(function()
+  (function()
     local N = #_G.AmousTitleStyles
 
     -- Riga alta come tutte le altre: il logo sta in mezzo alle due frecce,
