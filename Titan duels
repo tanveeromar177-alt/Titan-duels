@@ -4874,7 +4874,7 @@ _G.AmousMobileHideIncluded = function(key)
   if v == nil then return true end
   return v == true
 end
-_G.AmousMobileButtonScale = 0.75
+_G.AmousMobileButtonScale = 1
 _G.AmousMobileButtonPositions = _G.AmousMobileButtonPositions or {}
 savedMainPositionTable = nil
 savedMiniPositionTable = nil
@@ -5373,7 +5373,7 @@ function loadAmousConfig()
   _G.AmousGuiLocked = data.guiLocked == true
   _G.AmousHideMobileButtons = data.hideMobileButtons == true
   _G.AmousMobileHideList = (type(data.mobileHideList) == "table") and data.mobileHideList or {}
-  _G.AmousMobileButtonScale = math.clamp(tonumber(data.amousMobileButtonScale) or tonumber(_G.AmousMobileButtonScale) or 0.75, 0.30, 1.35)
+  _G.AmousMobileButtonScale = math.clamp(tonumber(data.amousMobileButtonScale) or tonumber(_G.AmousMobileButtonScale) or 1, 0.30, 1.35)
   _G.AmousMobileButtonPositions = type(data.mobileButtonPositions) == "table" and data.mobileButtonPositions or {}
   applySavedKeybinds(keybindData.keybinds)
   if keybindData.tpDownKeybind ~= nil then
@@ -12236,6 +12236,8 @@ local pages = {}
 local tabButtons = {}
 local tabNames = {"MOVEMENT", "COMBAT", "VISUALS", "SETTINGS", "KEYBINDS"}
 local activeTab = "MOVEMENT"
+-- Solo il testo mostrato cambia: i nomi interni (pagine, setTab) restano uguali.
+_G._AmousTabLabel = function(n) return ({MOVEMENT = "SPEED", KEYBINDS = "KEYS"})[n] or n end
 
 function addPage(name)
   local page = Instance.new("ScrollingFrame")
@@ -12318,7 +12320,7 @@ for tabIndex, name in ipairs(tabNames) do
   btn.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
   btn.BackgroundTransparency = 0.72
   btn.BorderSizePixel = 0
-  btn.Text = name
+  btn.Text = _G._AmousTabLabel(name)
   btn.TextColor3 = Color3.fromRGB(170, 170, 180)
   btn.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
   btn.TextStrokeTransparency = 0.35
@@ -12526,14 +12528,14 @@ end
         btn.AutomaticSize = Enum.AutomaticSize.None
         pad.PaddingTop    = UDim.new(0, 0)
         pad.PaddingBottom = UDim.new(0, 0)
-        btn.Size = UDim2.new(1, 0, 0, wordLength(name) + WORD_PAD)
-        local lbl = buildWord(btn, name, L.rot or 90)
+        btn.Size = UDim2.new(1, 0, 0, wordLength(_G._AmousTabLabel(name)) + WORD_PAD)
+        local lbl = buildWord(btn, _G._AmousTabLabel(name), L.rot or 90)
         lbl.Visible = true
       else
         btn.AutomaticSize = Enum.AutomaticSize.None
         local lbl = btn:FindFirstChild("VWord")
         if lbl then lbl.Visible = false end
-        btn.Text = name
+        btn.Text = _G._AmousTabLabel(name)
         btn.TextSize = 8
         btn.TextWrapped = false
         btn.TextXAlignment = Enum.TextXAlignment.Center
@@ -24640,7 +24642,7 @@ end
   speedKeybindRow(Settings, "Toggle UI", "ToggleUI", 6)
 
   section(Settings, "MOBILE BUTTONS", 7)
-  stepperRow(Settings, "Mobile Buttons Size", tonumber(_G.AmousMobileButtonScale) or 0.75, 10, function(v)
+  stepperRow(Settings, "Mobile Buttons Size", tonumber(_G.AmousMobileButtonScale) or 1, 10, function(v)
     _G.AmousMobileButtonScale = math.clamp(tonumber(v) or 0.35, 0.30, 1.35)
     if _G.AmousApplyMobileButtonSize then _G.AmousApplyMobileButtonSize() end
     saveAmousConfig()
@@ -24686,7 +24688,7 @@ end
       if _G.AmousResetMobileButtons then
         _G.AmousResetMobileButtons()
       else
-        _G.AmousMobileButtonScale = 0.75
+        _G.AmousMobileButtonScale = 1
         _G.AmousHideMobileButtons = false
         if _G.AmousApplyMobileButtonsHidden then _G.AmousApplyMobileButtonsHidden() end
         if _G.AmousApplyMobileButtonSize then _G.AmousApplyMobileButtonSize() end
@@ -25679,7 +25681,7 @@ end
       end
       if _G.AmousRefreshAfterDropSelector then pcall(_G.AmousRefreshAfterDropSelector) end
       if _G.AmousRefreshDropMethodSelector then pcall(_G.AmousRefreshDropMethodSelector) end   -- >>> DROP METHOD <<<
-      _G.AmousGuiLocked = false; _G.AmousHideMobileButtons = false; _G.AmousMobileButtonScale = 0.75
+      _G.AmousGuiLocked = false; _G.AmousHideMobileButtons = false; _G.AmousMobileButtonScale = 1
       _G.AmousMobileHideList = {}   -- >>> HIDE PER BOTTONE <<<
       if _G.AmousRefreshMobileHideList then pcall(_G.AmousRefreshMobileHideList) end
       if AmousUpdateGuiLockVisual then AmousUpdateGuiLockVisual() end
@@ -27402,7 +27404,7 @@ task.defer(function()
   end
 
   function _G.AmousApplyMobileButtonSize()
-    _G.AmousMobileButtonScale = math.clamp(tonumber(_G.AmousMobileButtonScale) or 0.75, 0.30, 1.35)
+    _G.AmousMobileButtonScale = math.clamp(tonumber(_G.AmousMobileButtonScale) or 1, 0.30, 1.35)
     for _, entry in pairs(mobileButtons) do
       local holder = entry and entry.holder
       if holder then
@@ -27426,34 +27428,17 @@ task.defer(function()
     end)
   end
 
+  -- Aggiornatori grafici dei bottoni (riempita da makeButton)
+  local btnVisual = setmetatable({}, {__mode = "k"})
+
   local function setActive(btn, state)
     if not btn then return end
     local pressed = btn:GetAttribute("AmousMobilePressed") == true
     state = (state == true) or pressed
     local visualState = state and "on" or "off"
     if btn:GetAttribute("AmousMobileVisualState") == visualState then return end
-    btn:SetAttribute("AmousMobileVisualState", visualState)
-    local holder = btn.Parent
-    local glow = holder and holder:FindFirstChild("Glow")
-    local st = btn:FindFirstChildOfClass("UIStroke")
-    TS:Create(btn, TweenInfo.new(0.18), {
-      BackgroundColor3 = Color3.fromRGB(0,0,0),
-      TextColor3 = Color3.fromRGB(255,255,255),
-      TextTransparency = 0,
-    }):Play()
-    if st then
-      TS:Create(st, TweenInfo.new(0.18), {
-        Color = state and Color3.fromRGB(235,235,235) or Color3.fromRGB(85,85,85),
-        Thickness = state and 1.5 or 1,
-        Transparency = state and 0 or 0.4,
-      }):Play()
-    end
-    if glow then
-      glow.Visible = false
-      glow.BackgroundTransparency = 1
-      local gs = glow:FindFirstChildOfClass("UIStroke")
-      if gs then gs.Transparency = 1 end
-    end
+    local apply = btnVisual[btn]
+    if apply then apply(state) end
   end
 
   local function pulse(btn)
@@ -27495,94 +27480,88 @@ local function applyTitleTextStyle(btn, grad)
 end
 
 local function makeButton(key, label, pos, onPress)
-    -- Contenitore
+    -- Stile preso dallo script2: 52x52, angoli 12, sfondo nero con gradiente,
+    -- testo GothamBlack 9 bianco; da attivo sfondo argento e testo scuro.
     local holder = Instance.new("Frame")
     holder.Name = "MBH_" .. key
-    holder.Size = UDim2.new(0, 78, 0, 58)
-    
+    holder.Size = UDim2.new(0, 52, 0, 52)
+
     local savedPos = _G.AmousMobileButtonPositions and _G.AmousMobileButtonPositions[key]
     if savedPos and type(savedPos) == "table" then
         holder.Position = tableToUDim2(savedPos, pos)
     else
         holder.Position = pos
     end
-    
+
     holder.BackgroundTransparency = 1
     holder.BorderSizePixel = 0
     holder.ZIndex = 1000
     holder.Active = true
     holder.Parent = mobileGui
 
-    -- Pulsante principale
+    -- Sfondo nero (gradiente 2,2,3 -> 2,2,10 a 25 gradi)
+    local bg = Instance.new("Frame")
+    bg.Name = "ButtonBg"
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    bg.BackgroundTransparency = 0
+    bg.BorderSizePixel = 0
+    bg.ZIndex = 1000
+    bg.Parent = holder
+    Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 12)
+    local bgGrad = Instance.new("UIGradient")
+    bgGrad.Color = ColorSequence.new(Color3.fromRGB(2, 2, 3), Color3.fromRGB(2, 2, 10))
+    bgGrad.Rotation = 25
+    bgGrad.Parent = bg
+
+    -- Sfondo argento, visibile solo quando il bottone e' attivo
+    local shine = Instance.new("Frame")
+    shine.Name = "ActiveShine"
+    shine.Size = UDim2.new(1, 0, 1, 0)
+    shine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    shine.BackgroundTransparency = 0
+    shine.BorderSizePixel = 0
+    shine.ZIndex = 1001
+    shine.Visible = false
+    shine.Parent = holder
+    Instance.new("UICorner", shine).CornerRadius = UDim.new(0, 12)
+    local shineGrad = Instance.new("UIGradient")
+    shineGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(240, 240, 240)),
+        ColorSequenceKeypoint.new(0.32, Color3.fromRGB(238, 238, 244)),
+        ColorSequenceKeypoint.new(0.68, Color3.fromRGB(184, 184, 194)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(82, 82, 92)),
+    })
+    shineGrad.Rotation = 90
+    shineGrad.Parent = shine
+
+    -- Pulsante principale (trasparente: tiene testo e input sopra lo sfondo)
     local btn = Instance.new("TextButton", holder)
     btn.Name = "MB_" .. key
     btn.Size = UDim2.new(1, 0, 1, 0)
     btn.Position = UDim2.new(0, 0, 0, 0)
-    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    btn.BackgroundTransparency = 0
+    btn.BackgroundTransparency = 1
     btn.BorderSizePixel = 0
-    btn.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    btn.BorderMode = Enum.BorderMode.Inset
     btn.Text = label
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBlack
-    btn.TextSize = 10
+    btn.TextSize = 9
     btn.TextWrapped = true
     btn.AutoButtonColor = false
     btn.ZIndex = 1002
     btn.Active = true
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 10)
+    local btnPad = Instance.new("UIPadding", btn)
+    btnPad.PaddingLeft = UDim.new(0, 4)
+    btnPad.PaddingRight = UDim.new(0, 4)
 
-    -- Testo: stesso stile del titolo "Amous Hub" in cima alla GUI
-    -- (font + gradiente argento con shimmer). Lo sfondo resta SEMPRE nero:
-    -- il gradiente moltiplica il nero, quindi non lo schiarisce.
-    local txtGrad = Instance.new("UIGradient", btn)
-    txtGrad.Name = "_AmousShimmerGradient"
-    txtGrad.Transparency = NumberSequence.new(0)
-    applyTitleTextStyle(btn, txtGrad)
-
-    -- Bordo: grigio spento, bianco quando il bottone e' attivo
-    local mbStroke = Instance.new("UIStroke")
-    mbStroke.Name = "MBStroke"
-    mbStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    mbStroke.Color = Color3.fromRGB(85, 85, 85)
-    mbStroke.Thickness = 1
-    mbStroke.Transparency = 0.4
-    mbStroke.Parent = btn
-
-    -- Glow esterno (senza bordo)
-    local glow = Instance.new("Frame", holder)
-    glow.Name = "Glow"
-    glow.Size = UDim2.new(1, 4, 1, 4)
-    glow.Position = UDim2.new(0, -2, 0, -2)
-    glow.BackgroundColor3 = Color3.fromRGB(186, 186, 186)
-    glow.BackgroundTransparency = 0.9
-    glow.BorderSizePixel = 0
-    glow.ZIndex = 1000
-    Instance.new("UICorner", glow).CornerRadius = UDim.new(0, 13)
-
-    -- Funzione per aggiornare lo stato (sfondo SEMPRE nero)
     local function updateButton(state)
-        btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        btn.BackgroundTransparency = 0
-        if state then
-            -- ON: testo bianco pieno + bordo bianco
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            txtGrad.Enabled = false
-            mbStroke.Color = Color3.fromRGB(235, 235, 235)
-            mbStroke.Thickness = 1.5
-            mbStroke.Transparency = 0
-            glow.BackgroundTransparency = 0.8
-        else
-            -- OFF: testo argento (stile titolo) + bordo grigio
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            txtGrad.Enabled = true
-            mbStroke.Color = Color3.fromRGB(85, 85, 85)
-            mbStroke.Thickness = 1
-            mbStroke.Transparency = 0.4
-            glow.BackgroundTransparency = 0.9
-        end
+        state = state == true
+        btn:SetAttribute("AmousMobileVisualState", state and "on" or "off")
+        shine.Visible = state
+        btn.TextColor3 = state and Color3.fromRGB(8, 24, 16) or Color3.fromRGB(255, 255, 255)
+        btn.TextTransparency = state and 0.14 or 0
     end
+    btnVisual[btn] = updateButton
 
     -- Funzione per ottenere lo stato logico
     local function getLogicalState()
@@ -27680,7 +27659,7 @@ local function makeButton(key, label, pos, onPress)
 end
 
   local x1, x2, x3 = -218, -154, -90
-  local y1, y2, y3, y4 = -150, -102, -54, -6
+  local y1, y2, y3, y4 = -150, -90, -30, 30
 local defaults = {
     drop         = UDim2.new(1, x2, 0.5, y1),
     autoPlay     = UDim2.new(1, x3, 0.5, y1),
@@ -27694,7 +27673,7 @@ local defaults = {
 }
 
   function _G.AmousResetMobileButtons()
-    _G.AmousMobileButtonScale = 0.75
+    _G.AmousMobileButtonScale = 1
     _G.AmousHideMobileButtons = false
     -- >>> HIDE PER BOTTONE <<< si torna a "tutti inclusi"
     _G.AmousMobileHideList = {}
@@ -27704,7 +27683,7 @@ local defaults = {
       local holder = entry and entry.holder
       if holder then
         holder.Position = defaultPos
-        holder.Size = UDim2.new(0, 78, 0, 58)
+        holder.Size = UDim2.new(0, 52, 0, 52)
         local btn = entry.btn
         if btn then
           btn.Position = UDim2.new(0, 0, 0, 0)
