@@ -7276,7 +7276,7 @@ end
                                             _G._AmousSaveState.queued = true
                                             local lastAt = _G._AmousSaveState.lastAt
 
-                                            task.delay(math.max(0.1, 0.25 - tick() - lastAt), function()
+                                            task.delay(math.max(0.1, 0.25 - (tick() - lastAt)), function()
                                                 _G._AmousSaveState.queued = false
                                                 helperFunction29(true)
                                             end)
@@ -7343,7 +7343,7 @@ end
                                     dataTable37.tpBatMode = _G._AmousTpBatMode or "HIGH PING"
                                     dataTable37.tpBatSwingDelay = 0.007
                                     dataTable37.stealMode = _G._AmousStealMode or "NORMAL"
-                                    dataTable37.autoCarryMode = "ON STEAL"
+                                    dataTable37.autoCarryMode = _G._AmousAutoCarryMode == "WHEN NEAR" and "WHEN NEAR" or "ON STEAL"
                                     dataTable37.semiRange = stealSystem and stealSystem.CFG and stealSystem.CFG.STEAL_RANGE or 8.7
                                     dataTable37.semiPrime = stealSystem and stealSystem.CFG and stealSystem.CFG.PRIME_RANGE or 100
                                     dataTable37.mainPos = _G._AmousMainPos
@@ -7394,6 +7394,7 @@ end
                                         batCounterMode = _G._AmousOshaBatCounter and _G._AmousOshaBatCounter.mode or _G._AmousBatCounterMode or "V1",
                                         medusaCounter = conditionFlag25 or false,
                                         ragCountdown = _G._AmousRagCountdownEnabled ~= false,
+                                        safeMode = _G._AmousSafeModeEnabled == true,
                                         esp = _G._AmousESPEnabled or false,
                                         showTracer = _G._AmousESPShowTracer == nil and true or _G._AmousESPShowTracer,
                                     }
@@ -7461,10 +7462,14 @@ end
                                         return false
                                     end
 
-                                    return result
-                                end
+                                    if result == true and _G._AmousSyncToggleFile then
+                                        pcall(_G._AmousSyncToggleFile)
+                                    end
 
-                                _G._AmousRequestSave = function(argumentValue)
+                                    return result
+                                    end
+
+                                    _G._AmousRequestSave = function(argumentValue)
                                     if not helperFunction42() then
                                         return false
                                     end
@@ -7825,7 +7830,7 @@ end
                                         _G._AmousStealMode = dataTable37.stealMode
                                     end
 
-                                    _G._AmousAutoCarryMode = "ON STEAL"
+                                    _G._AmousAutoCarryMode = dataTable37.autoCarryMode == "WHEN NEAR" and "WHEN NEAR" or "ON STEAL"
 
                                     if type(dataTable37.semiRange) == "number" and stealSystem and stealSystem.CFG then
                                         stealSystem.CFG.STEAL_RANGE = (dataTable37.semiRange == 62 or dataTable37.semiRange == 8.5) and 8.7 or dataTable37.semiRange
@@ -8002,7 +8007,7 @@ end
                                             _G._AmousAutoCarry = on.autoCarry
                                         end
 
-                                        _G._loadedOn_safeMode = false
+                                        _G._loadedOn_safeMode = on.safeMode == true
                                         _G._AmousSafeModeEnabled = false
                                         _G._loadedOn_kickWarning = on.kickWarning == true
                                         _G._AmousKickWarningEnabled = on.kickWarning == true
@@ -19864,7 +19869,7 @@ end
                                     end
                                 end)
 
-                                local function amousResyncToggleVisuals()
+                                local function amousCollectToggleStates()
                                     local pending = _G._AmousSafeModeState and _G._AmousSafeModeState.pending or {}
                                     local amousToggleStates = {
                                         ["Ragdoll Steal"] = _G._AmousRagdollStealEnabled ~= false,
@@ -19890,10 +19895,16 @@ end
                                         ["TP Bat"] = pending.tpBat == true or combatSettings.desync == true,
                                         ["Auto Left"] = pending.autoLeft == true or autoPathState.L == true,
                                         ["Auto Right"] = pending.autoRight == true or autoPathState.R == true,
-                                    }
+                                        }
 
-                                    for name, value in pairs(amousToggleStates) do
-                                        local handler = handlers[name]
+                                        return amousToggleStates
+                                    end
+
+                                    local function amousResyncToggleVisuals()
+                                        local amousToggleStates = amousCollectToggleStates()
+
+                                        for name, value in pairs(amousToggleStates) do
+                                            local handler = handlers[name]
                                         if handler then
                                             pcall(handler, value, true)
                                         end
@@ -19902,8 +19913,37 @@ end
 
                                 _G._AmousResyncToggles = amousResyncToggleVisuals
 
+                                _G._AmousSyncToggleFile = function()
+                                    if _G._AmousSettingsReady ~= true or not _G._AmousToggleWhitelist or not _G._AmousToggleMem then
+                                        return
+                                    end
+
+                                    if not _G._AmousToggleLoaded and _G._AmousToggleLoad then
+                                        pcall(_G._AmousToggleLoad)
+                                    end
+
+                                    local states = amousCollectToggleStates()
+                                    local changed = false
+
+                                    for name, value in pairs(states) do
+                                        if _G._AmousToggleWhitelist[name] and _G._AmousToggleMem[name] ~= (value == true) then
+                                            _G._AmousToggleMem[name] = value == true
+                                            changed = true
+                                        end
+                                    end
+
+                                    if changed and _G._AmousToggleSave then
+                                        _G._AmousToggleSave()
+                                    end
+                                end
+
                                 local function amousRestoreSavedToggles()
                                     local saved = _G._AmousToggleLoad and _G._AmousToggleLoad() or {}
+                                    local amousConfigIsSource = _G._AmousLoadedUnifiedV5 == true
+
+                                    if amousConfigIsSource then
+                                        saved = {}
+                                    end
                                     amousResyncToggleVisuals()
 
                                     local restored, total = 0, 0
@@ -19919,7 +19959,9 @@ end
                                     end
 
                                     if _G._AmousNotify then
-                                        if total == 0 then
+                                        if amousConfigIsSource then
+                                            -- main config already restored everything
+                                        elseif total == 0 then
                                             _G._AmousNotify("No saved toggles yet (toggle file empty or missing)")
                                         else
                                             _G._AmousNotify("Toggles restored: " .. tostring(restored) .. "/" .. tostring(total))
@@ -20432,6 +20474,16 @@ end
                                     _G._AmousSettingsReady = true
                                     pcall(_G._AmousPersistControllerBindings)
                                     pcall(helperFunction29, true)
+
+                                    pcall(function()
+                                        if _G._AmousTeleportSaveConn then
+                                            _G._AmousTeleportSaveConn:Disconnect()
+                                        end
+
+                                        _G._AmousTeleportSaveConn = localPlayer.OnTeleport:Connect(function()
+                                            pcall(helperFunction29, true)
+                                        end)
+                                    end)
                                 end)
 
                                 _G._AmousMobileBtnScale = _G._AmousMobileBtnScale or 1
