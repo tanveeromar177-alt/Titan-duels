@@ -2250,34 +2250,20 @@ local _motionBlurEffect = nil
 local _motionBlurCurrentValue = 0
 _G.AmousNoPlayerCollisionEnabled = _G.AmousNoPlayerCollisionEnabled or false
 local unwalkEnabled = false
-local selectedAnimPackIndex = 1  -- 1=NONE, 2..6=Pack1..5, 7=CUSTOM
-
--- >>> CUSTOM ANIM PACK BEGIN
--- ID scelti dall'utente per il pack CUSTOM (indice 7 dello slider).
--- Su _G e non su un local del main chunk per non consumare registri.
--- Stringa vuota = slot non impostato, quel movimento resta quello del gioco.
-_G.AmousCustomAnimIds = _G.AmousCustomAnimIds
-  or { idle = "", walk = "", run = "", jump = "", fall = "", climb = "" }
-_G.AmousCustomAnimSlots = { "idle", "walk", "run", "jump", "fall", "climb" }
-_G.AmousCustomAnimLabels = {
-  idle = "IDLE", walk = "WALK", run = "RUN",
-  jump = "JUMP", fall = "FALL", climb = "CLIMB",
+local selectedAnimPackIndex = 1  -- indice del pack scelto dentro _G.AmousAnimPackNames
+local _animPackSystemEnabled = false  -- selettore pack ON/OFF
+local setAnimPackVisual = nil  -- callback UI aggiornamento selettore
+-- Nomi dei pack (stessi di Evora). Su _G per non consumare registri del main chunk.
+_G.AmousAnimPackNames = {
+  "Adidas Sports", "Adidas Community", "Adidas Aura",
+  "Wicked Popular", "Elder", "Zombie",
+  "Mage", "Catwalk Glam", "Astronaut",
+  "Wicked \"Dancing Through Life\"", "Werewolf", "Superhero",
+  "Toy", "No Boundaries", "NFL",
+  "Amazon Unboxed", "Vampire", "Ninja",
+  "Robot", "Levitation", "Stylish",
+  "Bubbly", "Cartoon",
 }
-function _G.AmousHasCustomAnim()
-  for _, slot in ipairs(_G.AmousCustomAnimSlots) do
-    local v = _G.AmousCustomAnimIds[slot]
-    if v and v ~= "" then return true end
-  end
-  return false
-end
--- <<< CUSTOM ANIM PACK END
-local _animPackUnwalkWasActive = false  -- unwalk era attivo quando si è selezionato un pack
-local _animPackSavedIndex = 1          -- pack salvato quando unwalk viene attivato su un pack attivo
-local _animPackSystemEnabled = false
-local _animPackCharConn = nil
-local _animPackTracks = {}
-local _animPackCurrentAnim = "idle"
-local setAnimPackVisual = nil  -- callback UI aggiornamento slider
 local skyTheme = "Off"
 local skyEventConnections = {}
 local originalSkyObjects = {}
@@ -4320,8 +4306,8 @@ end
 local amousGuiScaleValue = 0.60
 local amousProgressBarScaleValue = 0.55
 
-CONFIG_FILE = "AmousHub_Config.json"
-KEYBINDS_CONFIG_FILE = "AmousHub_Keybinds.json"
+CONFIG_FILE = "AmousDuels.json"
+KEYBINDS_CONFIG_FILE = "AmousDuels_Keybinds.json"
 _amous_isfile = isfile or (syn and syn.isfile) or function(path)
   local ok, result = pcall(function() return readfile(path) end)
   return ok and result ~= nil
@@ -5254,9 +5240,8 @@ function collectAmousConfig()
     customToolSkinMedusa    = (_G.AmousCustomToolSkins and _G.AmousCustomToolSkins.Medusa) or "GoldenDesertEagle",
     customSoundsEnabled     = _G.AmousCustomSoundsEnabled == true,
 
-    selectedAnimPackIndex = selectedAnimPackIndex or 1,
-    customAnimIds = _G.AmousCustomAnimIds,   -- >>> CUSTOM ANIM PACK <<<
-    animPackSavedIndex = _animPackSavedIndex or 1,
+    animPackEnabled = _animPackSystemEnabled == true,
+    animPackName = (_G.AmousAnimPackNames or {})[selectedAnimPackIndex or 1],
     avatarChanger = (function()
       local ac = _G._AmousAvatarChanger
       if not ac then return nil end
@@ -5354,16 +5339,22 @@ _G.StretchRez = {
 }
 
 function loadAmousConfig()
-  if not canSaveConfig or not _amous_isfile(CONFIG_FILE) then return end
+  -- Dopo il cambio nome: se AmousDuels.json non esiste ancora si legge il vecchio file
+  local cfgFile, kbFile = CONFIG_FILE, KEYBINDS_CONFIG_FILE
+  if canSaveConfig and not _amous_isfile(CONFIG_FILE) and _amous_isfile("AmousHub_Config.json") then
+    cfgFile = "AmousHub_Config.json"
+    if not _amous_isfile(KEYBINDS_CONFIG_FILE) then kbFile = "AmousHub_Keybinds.json" end
+  end
+  if not canSaveConfig or not _amous_isfile(cfgFile) then return end
   local ok, data = pcall(function()
-    return HttpService:JSONDecode(_amous_readfile(CONFIG_FILE))
+    return HttpService:JSONDecode(_amous_readfile(cfgFile))
   end)
   if not ok or type(data) ~= "table" then return end
   savedConfig = data
   local keybindData = data
   pcall(function()
-    if _amous_isfile(KEYBINDS_CONFIG_FILE) then
-      local kb = HttpService:JSONDecode(_amous_readfile(KEYBINDS_CONFIG_FILE))
+    if _amous_isfile(kbFile) then
+      local kb = HttpService:JSONDecode(_amous_readfile(kbFile))
       if type(kb) == "table" then keybindData = kb end
     end
   end)
@@ -5605,18 +5596,13 @@ function loadAmousConfig()
     -- salviamo i dati in pending e li applichiamo all'inizializzazione del blocco
     _G._AmousAvatarChangerPending = data.avatarChanger
   end
-  selectedAnimPackIndex = math.clamp(tonumber(data.selectedAnimPackIndex) or 1, 1, 7)
-  _animPackSavedIndex = math.clamp(tonumber(data.animPackSavedIndex) or 1, 1, 7)
-  -- >>> CUSTOM ANIM PACK BEGIN
-  if type(data.customAnimIds) == "table" then
-    for _, slot in ipairs(_G.AmousCustomAnimSlots) do
-      local v = data.customAnimIds[slot]
-      -- Solo cifre: qualsiasi altra cosa e' spazzatura e va scartata.
-      _G.AmousCustomAnimIds[slot] =
-        (type(v) == "string" and v:match("^%d+$")) and v or ""
+  selectedAnimPackIndex = 1
+  if type(data.animPackName) == "string" then
+    for i, n in ipairs(_G.AmousAnimPackNames) do
+      if n == data.animPackName then selectedAnimPackIndex = i break end
     end
   end
-  -- <<< CUSTOM ANIM PACK END
+  _animPackSystemEnabled = data.animPackEnabled == true
   _introEnabled = false
   if data.selectedIntroMusic and INTRO_MUSIC_OPTIONS[data.selectedIntroMusic] then selectedIntroMusic = data.selectedIntroMusic end
   if data.musicSelectedSong and MUSIC_PLAYER_OPTIONS and MUSIC_PLAYER_OPTIONS[data.musicSelectedSong] then selectedMusicSong = data.musicSelectedSong end
@@ -6463,399 +6449,181 @@ do
 end
 -- ===== FINE UNWALK =====
 
--- ===== ANIMATION PACKS =====
+-- ===== ANIMATION PACKS (stile Evora: ON/OFF + selettore < nome >) =====
+-- Come in Evora: il pack cambia gli AnimationId dentro lo script Animate del
+-- personaggio. Prima della modifica i valori originali vengono salvati e con
+-- OFF (o cambiando pack) vengono rimessi. Nessun local nuovo nel main chunk.
 do
-  local ANIM_PACKS = {
-    -- NONE (index 1): nessun pack, usa animazioni default
-    [1] = nil,
-    -- Pack 1
-    [2] = {
-      idle = "rbxassetid://619542203",
-      walk = "rbxassetid://619544080",
-      run  = "rbxassetid://619543231",
-      jump = "rbxassetid://619542888",
-      fall = "rbxassetid://619541867",
-    },
-    -- Pack 2
-    [3] = {
-      idle = "rbxassetid://754637456",
-      walk = "rbxassetid://754636298",
-      run  = "rbxassetid://754635032",
-      jump = "rbxassetid://754637084",
-      fall = "rbxassetid://754636589",
-    },
-    -- Pack 3
-    [4] = {
-      idle = "rbxassetid://1113742618",
-      walk = "rbxassetid://1113741192",
-      run  = "rbxassetid://1113740510",
-      jump = "rbxassetid://1113742359",
-      fall = "rbxassetid://1113742092",
-    },
-    -- Pack 4
-    [5] = {
-      idle = "rbxassetid://126354114956642",
-      walk = "rbxassetid://106810508343012",
-      run  = "rbxassetid://124765145869332",
-      jump = "rbxassetid://115715495289805",
-      fall = "rbxassetid://93993406355955",
-    },
-    -- Pack 5
-    [6] = {
-      idle = "rbxassetid://619535834",
-      walk = "rbxassetid://619537468",
-      run  = "rbxassetid://619536621",
-      jump = "rbxassetid://619536283",
-      fall = "rbxassetid://619535616",
-    },
+  local ANIM_PACK_DATA = {
+    ["Adidas Sports"] = { idle1 = "18537376492", idle2 = "18537371272", walk = "18537392113", run = "18537384940", jump = "18537380791", fall = "18537367238", climb = "18537363391", swim = "18537389531", swimidle = "18537387180" },
+    ["Adidas Community"] = { idle1 = "122257458498464", idle2 = "102357151005774", walk = "122150855457006", run = "82598234841035", jump = "75290611992385", fall = "98600215928904", climb = "88763136693023", swim = "133308483266208", swimidle = "109346520324160" },
+    ["Adidas Aura"] = { idle1 = "110211186840347", idle2 = "114191137265065", walk = "83842218823011", run = "118320322718866", jump = "109996626521204", fall = "95603166884636", climb = "97824616490448", swim = "134530128383903", swimidle = "94922130551805" },
+    ["Wicked Popular"] = { idle1 = "118832222982049", idle2 = "76049494037641", walk = "92072849924640", run = "72301599441680", jump = "104325245285198", fall = "121152442762481", climb = "131326830509784", swim = "99384245425157", swimidle = "113199415118199" },
+    ["Elder"] = { idle1 = "10921101664", idle2 = "10921102574", walk = "10921111375", run = "10921104374", jump = "10921107367", fall = "10921105765", climb = "10921100400", swim = "10921108971", swimidle = "10921110146" },
+    ["Zombie"] = { idle1 = "10921344533", idle2 = "10921345304", walk = "10921355261", run = "616163682", jump = "10921351278", fall = "10921350320", climb = "10921343576", swim = "10921352344", swimidle = "10921353442" },
+    ["Mage"] = { idle1 = "10921144709", idle2 = "10921145797", walk = "10921152678", run = "10921148209", jump = "10921149743", fall = "10921148939", climb = "10921143404", swim = "10921150788", swimidle = "10921151661" },
+    ["Catwalk Glam"] = { idle1 = "133806214992291", idle2 = "94970088341563", walk = "109168724482748", run = "81024476153754", jump = "116936326516985", fall = "92294537340807", climb = "119377220967554", swim = "134591743181628", swimidle = "98854111361360" },
+    ["Astronaut"] = { idle1 = "10921034824", idle2 = "10921036806", walk = "10921046031", run = "10921039308", jump = "10921042494", fall = "10921040576", climb = "10921032124", swim = "10921044000", swimidle = "10921045006" },
+    ["Wicked \"Dancing Through Life\""] = { idle1 = "92849173543269", idle2 = "132238900951109", walk = "73718308412641", run = "135515454877967", jump = "78508480717326", fall = "78147885297412", climb = "129447497744818", swim = "110657013921774", swimidle = "129183123083281" },
+    ["Werewolf"] = { idle1 = "10921330408", idle2 = "10921333667", walk = "10921342074", run = "10921336997", fall = "10921337907", climb = "10921329322", swim = "10921340419", swimidle = "10921341319" },
+    ["Superhero"] = { idle1 = "10921288909", idle2 = "10921290167", walk = "10921298616", run = "10921291831", jump = "10921294559", fall = "10921293373", climb = "10921286911", swim = "10921295495", swimidle = "10921297391" },
+    ["Toy"] = { idle1 = "10921301576", walk = "10921312010", run = "10921306285", jump = "10921308158", fall = "10921307241", climb = "10921300839", swim = "10921309319", swimidle = "10921310341" },
+    ["No Boundaries"] = { idle1 = "18747067405", idle2 = "18747063918", walk = "18747074203", run = "18747070484", jump = "18747069148", fall = "18747062535", climb = "18747060903", swim = "18747073181", swimidle = "18747071682" },
+    ["NFL"] = { idle1 = "92080889861410", idle2 = "74451233229259", walk = "110358958299415", run = "117333533048078", jump = "119846112151352", fall = "129773241321032", climb = "134630013742019", swim = "132697394189921", swimidle = "79090109939093" },
+    ["Amazon Unboxed"] = { idle1 = "98281136301627", walk = "90478085024465", run = "134824450619865", jump = "121454505477205", fall = "94788218468396", climb = "121145883950231", swim = "105962919001086", swimidle = "129126268464847" },
+    ["Vampire"] = { idle1 = "10921315373", walk = "10921326949", run = "10921320299", jump = "10921322186", fall = "10921321317", climb = "10921314188", swim = "10921324408", swimidle = "10921325443" },
+    ["Ninja"] = { idle1 = "656117400", idle2 = "656118341", walk = "656121766", run = "656118852", jump = "656117878", fall = "656115606", climb = "656114359", swim = "656119721", swimidle = "656121397" },
+    ["Robot"] = { idle1 = "616088211", idle2 = "616089559", walk = "616095330", run = "616091570", jump = "616090535", fall = "616087089", climb = "616086039", swim = "616092998", swimidle = "616094091" },
+    ["Levitation"] = { idle1 = "616006778", idle2 = "616008087", walk = "616013216", run = "616010382", jump = "616008936", fall = "616005863", climb = "616003713", swim = "616011509", swimidle = "616012453" },
+    ["Stylish"] = { idle1 = "616136790", idle2 = "616138447", walk = "616146177", run = "616140816", jump = "616139451", fall = "616134815", climb = "616133594", swim = "616143378", swimidle = "616144772" },
+    ["Bubbly"] = { idle1 = "910004836", idle2 = "910009958", walk = "910034870", run = "910025107", jump = "910016857", fall = "910001910", climb = "909997997", swim = "910028158", swimidle = "910030921" },
+    ["Cartoon"] = { idle1 = "742637544", idle2 = "742638445", walk = "742640026", run = "742638842", jump = "742637942", fall = "742637151", climb = "742636889", swim = "742639220", swimidle = "742639812" },
   }
 
+  -- slot del pack -> (cartella, nome) dentro lo script Animate
+  local SLOT_MAP = {
+    { slot = "idle1",    folder = "idle",     name = "Animation1" },
+    { slot = "idle2",    folder = "idle",     name = "Animation2" },
+    { slot = "walk",     folder = "walk",     name = "WalkAnim"   },
+    { slot = "run",      folder = "run",      name = "RunAnim"    },
+    { slot = "jump",     folder = "jump",     name = "JumpAnim"   },
+    { slot = "fall",     folder = "fall",     name = "FallAnim"   },
+    { slot = "climb",    folder = "climb",    name = "ClimbAnim"  },
+    { slot = "swim",     folder = "swim",     name = "Swim"       },
+    { slot = "swimidle", folder = "swimidle", name = "SwimIdle"   },
+  }
+  local ANIMATE_FOLDERS = { "idle", "walk", "run", "jump", "fall", "climb", "swim", "swimidle" }
 
-  local function _animLoadTrack(animator, id)
-    local animation = Instance.new("Animation")
-    local success, result = pcall(function()
-      local objects = game:GetObjects(id)
-      for _, obj in pairs(objects) do
-        if obj:IsA("Animation") then return obj.AnimationId end
-        local deep = obj:FindFirstChildWhichIsA("Animation", true)
-        if deep then return deep.AnimationId end
+  -- Animate -> { ids = {"cartella/nome" = id originale}, madeAnims = {}, madeFolders = {} }
+  -- Chiave debole sull'istanza: dopo il respawn il vecchio Animate non resta in memoria.
+  local originals = setmetatable({}, { __mode = "k" })
+
+  local function snapshotAnimate(animate)
+    if originals[animate] then return originals[animate] end
+    local snap = { ids = {}, madeAnims = {}, madeFolders = {} }
+    for _, folderName in ipairs(ANIMATE_FOLDERS) do
+      local folder = animate:FindFirstChild(folderName)
+      if folder then
+        for _, child in ipairs(folder:GetChildren()) do
+          if child:IsA("Animation") then
+            snap.ids[folderName .. "/" .. child.Name] = child.AnimationId
+          end
+        end
       end
+    end
+    originals[animate] = snap
+    return snap
+  end
+
+  local function restoreAnimate(animate)
+    local snap = originals[animate]
+    if not snap then return end
+    for key, id in pairs(snap.ids) do
+      local folderName, animName = key:match("^([^/]+)/(.+)$")
+      local folder = folderName and animate:FindFirstChild(folderName)
+      local anim = folder and folder:FindFirstChild(animName)
+      if anim and anim:IsA("Animation") then
+        pcall(function() anim.AnimationId = id end)
+      end
+    end
+    -- Animation/cartelle create da noi perche' il gioco non le aveva
+    for key in pairs(snap.madeAnims) do
+      local folderName, animName = key:match("^([^/]+)/(.+)$")
+      local folder = folderName and animate:FindFirstChild(folderName)
+      local anim = folder and folder:FindFirstChild(animName)
+      if anim then pcall(function() anim:Destroy() end) end
+    end
+    snap.madeAnims = {}
+    for folderName in pairs(snap.madeFolders) do
+      local folder = animate:FindFirstChild(folderName)
+      if folder then pcall(function() folder:Destroy() end) end
+    end
+    snap.madeFolders = {}
+  end
+
+  local function stopPlayingTracks(char)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    local animator = hum:FindFirstChildOfClass("Animator")
+    local ok, tracks = pcall(function()
+      if animator then return animator:GetPlayingAnimationTracks() end
+      return hum:GetPlayingAnimationTracks()
     end)
-    animation.AnimationId = (success and result) and result or id
-    return animator:LoadAnimation(animation)
-  end
-
-  -- >>> CUSTOM ANIM PACK BEGIN
-  -- Le connessioni agli eventi dell'Humanoid non venivano MAI chiuse.
-  -- Ogni ricarica del sistema (cambio pack, o cambio di un asset custom)
-  -- ne aggiungeva un altro set sopra ai precedenti: i vecchi restavano
-  -- vivi e continuavano a comandare Play/Stop sulle tracce, quindi la
-  -- nuova animazione non prendeva il controllo finche' non respawnavi,
-  -- perche' solo allora l'Humanoid vecchio moriva insieme alle connessioni.
-  -- Ora si tengono in una lista e si chiudono a ogni stop.
-  _G._AmousAnimPackConns = _G._AmousAnimPackConns or {}
-  -- <<< CUSTOM ANIM PACK END
-
-  local function _animStopAll()
-    for _, track in pairs(_animPackTracks) do
-      pcall(function() track:Stop(0) end)
-    end
-    _animPackTracks = {}
-    -- >>> CUSTOM ANIM PACK BEGIN
-    for _, c in ipairs(_G._AmousAnimPackConns) do
-      pcall(function() c:Disconnect() end)
-    end
-    _G._AmousAnimPackConns = {}
-    -- <<< CUSTOM ANIM PACK END
-  end
-
-  -- >>> CUSTOM ANIM PACK BEGIN
-  -- L'indice 7 non ha una tabella fissa: si costruisce al volo dagli ID
-  -- che l'utente ha inserito, e contiene SOLO gli slot valorizzati. Per
-  -- gli altri movimenti resta l'animazione del gioco, esattamente come
-  -- fa Uranium: non si forza niente su uno slot vuoto.
-  local function _animCustomPack()
-    local t, any = {}, false
-    for _, slot in ipairs(_G.AmousCustomAnimSlots) do
-      local id = _G.AmousCustomAnimIds[slot]
-      if id and id ~= "" then
-        t[slot] = "rbxassetid://" .. id
-        any = true
-      end
-    end
-    if not any then return nil end
-    return t
-  end
-  -- <<< CUSTOM ANIM PACK END
-
-  local function _animStartSystem(char)
-    _animStopAll()
-    if not _animPackSystemEnabled then return end
-    -- >>> CUSTOM ANIM PACK BEGIN
-    local pack
-    if selectedAnimPackIndex == 7 then
-      pack = _animCustomPack()
-      -- Nessun ID impostato: si lascia il sistema nativo acceso invece di
-      -- spegnere Animate e restare senza animazioni.
-      if not pack then return end
-    else
-      pack = ANIM_PACKS[selectedAnimPackIndex]
-    end
-    if not pack then return end
-    -- <<< CUSTOM ANIM PACK END
-
-    local humanoid = char:WaitForChild("Humanoid")
-    local animator = humanoid:WaitForChild("Animator")
-    local Animate = char:FindFirstChild("Animate")
-
-    -- >>> CUSTOM ANIM PACK BEGIN
-    -- COPERTURA PARZIALE.
-    -- Lo script Animate del gioco si accende o si spegne per TUTTO il
-    -- personaggio: non esiste un modo di spegnerlo solo per l'idle. Finche'
-    -- un pack copre tutti e cinque i movimenti la cosa non si nota, ma col
-    -- pack CUSTOM puoi lasciare uno slot vuoto. Spegnendo Animate lo slot
-    -- vuoto non aveva NIENTE da suonare, e la traccia custom precedente
-    -- restava in loop: sembrava che l'asset venisse riapplicato di nascosto,
-    -- mentre in realta' non era mai stato fermato.
-    -- Se la copertura non e' completa, Animate resta ACCESO e le tracce
-    -- custom girano sopra con priorita' Action, che vince su Idle e
-    -- Movement del gioco. Dove non c'e' una traccia custom riemerge quella
-    -- originale, che e' esattamente il comportamento voluto.
-    local partial = false
-    if selectedAnimPackIndex == 7 then
-      for _, sl in ipairs({"idle", "walk", "run", "jump", "fall"}) do
-        if not pack[sl] then partial = true break end
-      end
-    end
-
-    if not partial then
-      if Animate then Animate.Disabled = true end
-    elseif Animate then
-      Animate.Disabled = false
-    end
-    task.wait(0.1)
-    if not partial then
-      for _, t in pairs(animator:GetPlayingAnimationTracks()) do
-        pcall(function() t:Stop(0) end)
-      end
-    end
-    -- <<< CUSTOM ANIM PACK END
-
-    for name, id in pairs(pack) do
-      local track = _animLoadTrack(animator, id)
-      track.Looped = (name == "idle" or name == "walk" or name == "run" or name == "fall")
-      if partial then
-        -- Sopra a tutto quello che suona il gioco.
-        track.Priority = Enum.AnimationPriority.Action
-      elseif name == "idle" then
-        track.Priority = Enum.AnimationPriority.Idle
-      elseif name == "walk" or name == "run" then
-        track.Priority = Enum.AnimationPriority.Movement
-      else
-        track.Priority = Enum.AnimationPriority.Action
-      end
-      _animPackTracks[name] = track
-    end
-
-    local function playAnim(name, forceRestart)
-      if not _animPackSystemEnabled then return end
-      -- >>> CUSTOM ANIM PACK BEGIN
-      if not _animPackTracks[name] then
-        -- Slot senza asset: si FERMA la traccia custom in corso, altrimenti
-        -- resta in loop e copre l'animazione del gioco. Prima si usciva e
-        -- basta, ed e' per questo che togliendo l'idle continuavi a vedere
-        -- l'animazione custom.
-        local cur = _animPackTracks[_animPackCurrentAnim]
-        if cur then pcall(function() cur:Stop(0.15) end) end
-        _animPackCurrentAnim = name
-        return
-      end
-      -- <<< CUSTOM ANIM PACK END
-      if _animPackCurrentAnim == name and not forceRestart then return end
-      if _animPackTracks[_animPackCurrentAnim] and _animPackCurrentAnim ~= name then
-        pcall(function() _animPackTracks[_animPackCurrentAnim]:Stop(0.15) end)
-      end
-      _animPackCurrentAnim = name
-      if forceRestart then _animPackTracks[name]:Stop() end
-      _animPackTracks[name]:Play(0.15)
-    end
-
-    -- Hookiamo gli eventi PRIMA del play iniziale
-    -- >>> CUSTOM ANIM PACK BEGIN: ogni connessione va registrata <<<
-    local _conns = _G._AmousAnimPackConns
-    table.insert(_conns, humanoid.Running:Connect(function(speed)
-      if not _animPackSystemEnabled then return end
-      local state = humanoid:GetState()
-      if state == Enum.HumanoidStateType.Freefall or state == Enum.HumanoidStateType.Jumping then return end
-      if speed > 14 then playAnim("run")
-      elseif speed > 0.5 then playAnim("walk")
-      else playAnim("idle") end
-    end))
-    table.insert(_conns, humanoid.Jumping:Connect(function(active)
-      if not _animPackSystemEnabled or not active then return end
-      playAnim("jump", true)
-    end))
-    table.insert(_conns, humanoid.FreeFalling:Connect(function(active)
-      if not _animPackSystemEnabled or not active then return end
-      playAnim("fall")
-    end))
-    table.insert(_conns, humanoid.StateChanged:Connect(function(_, newState)
-      if not _animPackSystemEnabled then return end
-      if newState == Enum.HumanoidStateType.Landed then
-        if humanoid.MoveDirection.Magnitude > 0 then
-          if humanoid.WalkSpeed > 14 then playAnim("run") else playAnim("walk") end
-        else playAnim("idle") end
-      end
-    end))
-
-    -- Determina l'animazione iniziale in base allo stato attuale del personaggio
-    -- invece di forzare sempre idle
-    local currentState = humanoid:GetState()
-    if currentState == Enum.HumanoidStateType.Jumping then
-      _animPackCurrentAnim = "jump"
-      if _animPackTracks.jump then _animPackTracks.jump:Play(0.15) end
-    elseif currentState == Enum.HumanoidStateType.Freefall then
-      _animPackCurrentAnim = "fall"
-      if _animPackTracks.fall then _animPackTracks.fall:Play(0.15) end
-    elseif humanoid.MoveDirection.Magnitude > 0.1 then
-      if humanoid.WalkSpeed > 14 then
-        _animPackCurrentAnim = "run"
-        if _animPackTracks.run then _animPackTracks.run:Play(0.15) end
-      else
-        _animPackCurrentAnim = "walk"
-        if _animPackTracks.walk then _animPackTracks.walk:Play(0.15) end
-      end
-    else
-      _animPackCurrentAnim = "idle"
-      if _animPackTracks.idle then _animPackTracks.idle:Play(0.15) end
+    if ok and tracks then
+      for _, t in ipairs(tracks) do pcall(function() t:Stop(0) end) end
     end
   end
 
-  local function _animRestoreDefault()
-    _animStopAll()
-    local char = LP.Character
-    if char then
-      local Animate = char:FindFirstChild("Animate")
-      if Animate then Animate.Disabled = false end
-      local humanoid = char:FindFirstChild("Humanoid")
-      if humanoid then
-        local animator = humanoid:FindFirstChild("Animator")
-        if animator then
-          for _, t in pairs(animator:GetPlayingAnimationTracks()) do t:Stop(0) end
+  local function applyPack(char, packName)
+    local pack = packName and ANIM_PACK_DATA[packName]
+    local animate = char and char:FindFirstChild("Animate")
+    if not pack or not animate then return false end
+    local snap = snapshotAnimate(animate)
+    -- Si riparte sempre dagli ID originali: uno slot che il nuovo pack non ha
+    -- (es. Idle 2 di Toy) non deve restare quello del pack precedente.
+    restoreAnimate(animate)
+    for _, m in ipairs(SLOT_MAP) do
+      local id = pack[m.slot]
+      if id then
+        local folder = animate:FindFirstChild(m.folder)
+        if not folder then
+          folder = Instance.new("StringValue")
+          folder.Name = m.folder
+          folder.Parent = animate
+          snap.madeFolders[m.folder] = true
         end
-      end
-    end
-  end
-
-  -- Flag condiviso tra AmousSetAnimPack e stopUnwalk override:
-  -- alzato quando è il pack stesso a chiamare stopUnwalk (non l'utente),
-  -- così stopUnwalk non fa il ripristino automatico in quel caso.
-  local _packCallingStop = false
-
-  -- Funzione pubblica: applica un pack per indice (1=NONE, 2-6=pack 1-5)
-  _G.AmousSetAnimPack = function(index)
-    index = math.clamp(tonumber(index) or 1, 1, 7)   -- 7 = CUSTOM
-
-    if index == 1 then
-      -- L'utente ha cliccato NONE manualmente
-      _animPackSystemEnabled = false
-      _animRestoreDefault()
-      selectedAnimPackIndex = 1
-
-      if unwalkEnabled then
-        -- Unwalk è attivo: l'utente ha confermato NONE esplicitamente
-        -- Azzera il pack salvato così quando unwalk si spegne non ripristina niente
-        _animPackSavedIndex = 1
-        _animPackUnwalkWasActive = false
-        -- Unwalk rimane ON, aggiornamento visivo già corretto (unwalk toggle è già acceso)
-      else
-        -- Unwalk non è attivo: torno a NONE normalmente
-        -- Se c'era un flag unwalk pendente (unwalk era stato forzato OFF da un pack),
-        -- lo riattivo perché l'utente è tornato a NONE
-        if _animPackUnwalkWasActive then
-          _animPackUnwalkWasActive = false
-          _animPackSavedIndex = 1
-          startUnwalk()
-          if _SV.setUnwalkVisual then _SV.setUnwalkVisual(true) end
+        local anim = folder:FindFirstChild(m.name)
+        if not anim then
+          anim = Instance.new("Animation")
+          anim.Name = m.name
+          anim.Parent = folder
+          snap.madeAnims[m.folder .. "/" .. m.name] = true
         end
-      end
-
-    else
-      -- L'utente ha selezionato pack 1-5
-      if unwalkEnabled then
-        _animPackSavedIndex = index
-        _animPackUnwalkWasActive = true
-        _packCallingStop = true
-        stopUnwalk()
-        if _SV.setUnwalkVisual then _SV.setUnwalkVisual(false) end
-      end
-      selectedAnimPackIndex = index
-      _animPackSystemEnabled = true
-      local char = LP.Character
-      if char then
-        task.spawn(function() _animStartSystem(char) end)
+        pcall(function() anim.AnimationId = "rbxassetid://" .. id end)
       end
     end
-
-    if setAnimPackVisual then setAnimPackVisual(selectedAnimPackIndex) end
-    -- >>> VISIBILE SOLO CON CUSTOM <<<
-    if _G.AmousCustomAnimSetRowVisible then
-      _G.AmousCustomAnimSetRowVisible(selectedAnimPackIndex == 7, true)
-    end
-    saveAmousConfig()
+    stopPlayingTracks(char)
+    return true
   end
 
-  -- Override di startUnwalk/stopUnwalk per gestire l'interazione col pack
-  -- Si aggiunge alla logica esistente, non la sostituisce
-  local _origStartUnwalk = startUnwalk
-  local _origStopUnwalk  = stopUnwalk
-
-  startUnwalk = function()
-    -- Se c'è un pack attivo, salvalo e torna a NONE prima di avviare unwalk
-    if selectedAnimPackIndex ~= 1 then
-      _animPackSavedIndex = selectedAnimPackIndex
-      _animPackUnwalkWasActive = true
-      _animPackSystemEnabled = false
-      _animRestoreDefault()
-      selectedAnimPackIndex = 1
-      if setAnimPackVisual then setAnimPackVisual(1) end
-    end
-    _origStartUnwalk()
-  end
-
-  stopUnwalk = function()
-    _origStopUnwalk()
-    -- Se chiamato internamente dal pack, non fare niente
-    if _packCallingStop then
-      _packCallingStop = false
-      return
-    end
-    -- Se c'era un pack salvato prima che unwalk lo coprisse, ripristinalo
-    if _animPackSavedIndex ~= 1 then
-      local idx = _animPackSavedIndex
-      _animPackSavedIndex = 1
-      _animPackUnwalkWasActive = false
-      task.delay(0.25, function()
-        if not unwalkEnabled and _G.AmousSetAnimPack then
-          _G.AmousSetAnimPack(idx)
-        end
-      end)
-    end
-  end
-
-  -- >>> CUSTOM ANIM PACK BEGIN
-  -- Chiamata dal picker ogni volta che un ID viene aggiunto o tolto:
-  -- se CUSTOM e' la selezione attiva il sistema va ricaricato subito,
-  -- altrimenti la modifica si vedrebbe solo al respawn.
-  function _G.AmousReloadCustomAnimPack()
-    if selectedAnimPackIndex ~= 7 then return end
+  local function refreshCharacter()
     local char = LP.Character
     if not char then return end
-    if _G.AmousHasCustomAnim() then
-      -- Si riparte da zero: _animStartSystem chiama _animStopAll, che ora
-      -- chiude anche le connessioni, quindi il set nuovo e' l'unico attivo
-      -- e l'asset appena inserito si applica subito, senza reset.
-      _animPackSystemEnabled = true
-      task.spawn(function() _animStartSystem(char) end)
+    if _animPackSystemEnabled then
+      applyPack(char, _G.AmousAnimPackNames[selectedAnimPackIndex])
     else
-      _animPackSystemEnabled = false
-      _animRestoreDefault()
+      local animate = char:FindFirstChild("Animate")
+      if animate then restoreAnimate(animate) end
     end
   end
-  -- <<< CUSTOM ANIM PACK END
 
-  -- Avvio automatico del pack quando il personaggio riappare
+  -- index: nuovo pack scelto (nil = invariato); enabled: ON/OFF (nil = invariato)
+  _G.AmousSetAnimPack = function(index, enabled, skipSave)
+    local count = #_G.AmousAnimPackNames
+    if index ~= nil then
+      selectedAnimPackIndex = math.clamp(math.floor(tonumber(index) or 1), 1, count)
+    end
+    if enabled ~= nil then
+      _animPackSystemEnabled = enabled and true or false
+    end
+    pcall(refreshCharacter)
+    if setAnimPackVisual then setAnimPackVisual(selectedAnimPackIndex, _animPackSystemEnabled) end
+    if not skipSave then saveAmousConfig() end
+  end
+
+  -- Dopo il respawn il nuovo Animate ha di nuovo gli ID del gioco
   LP.CharacterAdded:Connect(function(newChar)
     _G._AmousWaitCharReady(newChar, 10)
     pcall(function() newChar:WaitForChild("Animate", 3) end)
-    if _animPackSystemEnabled and selectedAnimPackIndex ~= 1 then
-      task.spawn(function() _animStartSystem(newChar) end)
+    task.wait(0.5)
+    if _animPackSystemEnabled and LP.Character == newChar then
+      pcall(applyPack, newChar, _G.AmousAnimPackNames[selectedAnimPackIndex])
     end
   end)
 
-  -- Avvio immediato se il personaggio è già spawnato
-  if LP.Character and _animPackSystemEnabled and selectedAnimPackIndex ~= 1 then
-    task.spawn(function() _animStartSystem(LP.Character) end)
+  -- Personaggio gia' spawnato e pack acceso da config
+  if LP.Character and _animPackSystemEnabled then
+    task.spawn(refreshCharacter)
   end
 end
 -- ===== FINE ANIMATION PACKS =====
@@ -10736,7 +10504,7 @@ local function setupOverheadInfo(char)
     ragdollCountdownLabel.BackgroundTransparency = 1
     ragdollCountdownLabel.Text = ""
     ragdollCountdownLabel.Visible = false
-    ragdollCountdownLabel.TextColor3 = Color3.fromRGB(80, 255, 120)
+    ragdollCountdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     ragdollCountdownLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     ragdollCountdownLabel.TextStrokeTransparency = 0
     ragdollCountdownLabel.Font = Enum.Font.GothamBlack
@@ -10858,7 +10626,7 @@ function _G.AmousStartEnemyRagdollCountdown()
                 local label = data.gui:FindFirstChild("Countdown")
                 if label then
                     label.Text = string.format("RAGDOLL %.1f", left)
-                    label.TextColor3 = left <= 1 and Color3.fromRGB(255,230,90) or Color3.fromRGB(80,255,120)
+                    label.TextColor3 = Color3.fromRGB(255,255,255)
                 end
             else
                 -- Il timer è scaduto: nascondi la GUI e rimuovi il dato
@@ -10904,7 +10672,7 @@ function _G.AmousStartEnemyRagdollCountdown()
                         label.Size = UDim2.new(1, 0, 1, 0)
                         label.BackgroundTransparency = 1
                         label.Text = ""
-                        label.TextColor3 = Color3.fromRGB(80,255,120)
+                        label.TextColor3 = Color3.fromRGB(255,255,255)
                         label.TextStrokeColor3 = Color3.fromRGB(0,0,0)
                         label.TextStrokeTransparency = 0
                         label.Font = Enum.Font.GothamBlack
@@ -11096,11 +10864,7 @@ function hookRagdollCountdown(char)
     if left > 0 then
       ragdollCountdownLabel.Visible = true
       ragdollCountdownLabel.Text = string.format("RAGDOLL %.1f", left)
-      if left <= 1 then
-        ragdollCountdownLabel.TextColor3 = Color3.fromRGB(255, 230, 90)
-      else
-        ragdollCountdownLabel.TextColor3 = Color3.fromRGB(80, 255, 120)
-      end
+      ragdollCountdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
       ragdollCountdownLabel.Visible = false
       ragdollCountdownLabel.Text = ""
@@ -19513,28 +19277,18 @@ function __AmousDuelsSetupVisualsUI()
     end
   end
 
-  -- ===== ANIMATION PACKS =====
+  -- ===== ANIMATION PACKS (stile Evora: ON/OFF + selettore < nome >) =====
   section(Utility, "ANIMATION PACKS", 10)
   do
-    -- >>> CUSTOM ANIM PACK BEGIN
-    -- Settimo segmento: CUSTOM. Su due righe perche' a un settimo di riga
-    -- "CUSTOM" per intero non ci sta, e rimpicciolire il testo lo avrebbe
-    -- reso diverso da tutti gli altri.
-    local PACK_LABELS = {"NONE", "1", "2", "3", "4", "5", "CUS\nTOM"}
-    -- <<< CUSTOM ANIM PACK END
-    local NUM_PACKS = #PACK_LABELS  -- 7
+    local PACK_NAMES = _G.AmousAnimPackNames
+    local NUM_PACKS = #PACK_NAMES
 
-    -- Holder principale (occupa tutta la riga, come stretch rez)
     local animPackHolder = Instance.new("Frame")
     animPackHolder.Name = "Animation Pack Selector"
     animPackHolder.BackgroundColor3 = COLORS.row
     animPackHolder.BackgroundTransparency = 0.28
     animPackHolder.Size = UDim2.new(1, -4, 0, 42)
     animPackHolder.BorderSizePixel = 0
-    -- LayoutOrder INTERO: e' un intero nella proprieta', e un 10.5 verrebbe
-    -- arrotondato con l'ordine deciso dal nome. A parita' di ordine il nome
-    -- decide, e "ANIMATION PACKS" < "Animation Pack Selector" <
-    -- "Custom Animation Pack": esattamente l'ordine voluto.
     animPackHolder.LayoutOrder = 10
     animPackHolder.ZIndex = 4
     animPackHolder.ClipsDescendants = true
@@ -19543,716 +19297,136 @@ function __AmousDuelsSetupVisualsUI()
     stroke(animPackHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
     _G._AmousRegAccent(animPackHolder, nil, "soft")
 
-    -- Slide indicator (si muove orizzontalmente)
-    local animSlide = Instance.new("Frame")
-    animSlide.Name = "AnimSlide"
-    animSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
-    animSlide.BackgroundTransparency = 0.1
-    animSlide.AnchorPoint = Vector2.new(0.5, 0.5)
-    animSlide.Size = UDim2.new(1/NUM_PACKS, -4, 1, -8)
-    animSlide.Position = UDim2.new(0.5/NUM_PACKS, 0, 0.5, 0)
-    animSlide.BorderSizePixel = 0
-    animSlide.ZIndex = 5
-    animSlide.Parent = animPackHolder
-    corner(animSlide, 13)
-    local animSlideStroke = Instance.new("UIStroke")
-    animSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    animSlideStroke.Color = Color3.fromRGB(249, 249, 249)
-    animSlideStroke.Thickness = 1.5
-    animSlideStroke.Transparency = 0.1
-    animSlideStroke.Parent = animSlide
-    local animSlideGrad = Instance.new("UIGradient")
-    animSlideGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
-    })
-    animSlideGrad.Transparency = NumberSequence.new({
-      NumberSequenceKeypoint.new(0, 0.08),
-      NumberSequenceKeypoint.new(0.5, 0.02),
-      NumberSequenceKeypoint.new(1, 0.08),
-    })
-    animSlideGrad.Parent = animSlide
-    _G._AmousRegAccent(animSlide, animSlideGrad, "slide")
-    animSlideGrad.Rotation = 22
+    -- Pulsante ON/OFF (a sinistra)
+    local togBtn = Instance.new("TextButton")
+    togBtn.Name = "AnimPackToggle"
+    togBtn.AnchorPoint = Vector2.new(0, 0.5)
+    togBtn.Position = UDim2.new(0, 8, 0.5, 0)
+    togBtn.Size = UDim2.new(0, 50, 0, 28)
+    togBtn.BackgroundColor3 = COLORS.toggleBg
+    togBtn.BackgroundTransparency = 0.1
+    togBtn.BorderSizePixel = 0
+    togBtn.AutoButtonColor = false
+    togBtn.Text = "OFF"
+    togBtn.TextColor3 = COLORS.white
+    togBtn.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    togBtn.TextStrokeTransparency = 0.3
+    togBtn.TextSize = 11
+    togBtn.Font = Enum.Font.GothamBlack
+    togBtn.ZIndex = 8
+    togBtn.Parent = animPackHolder
+    corner(togBtn, 13)
+    stroke(togBtn, Color3.fromRGB(249, 249, 249), 1.2, 0.3)
 
-    -- Crea label e click per ogni bottone
-    local animBtnLabels = {}
-    local segW = 1 / NUM_PACKS
-    for i, label in ipairs(PACK_LABELS) do
-      local lbl = Instance.new("TextLabel")
-      lbl.Name = "AnimPackLabel_" .. tostring(i)
-      lbl.BackgroundTransparency = 1
-      lbl.Text = label
-      lbl.TextColor3 = COLORS.white
-      lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-      lbl.TextStrokeTransparency = 0.2
-      lbl.TextSize = 10
-      lbl.Font = Enum.Font.GothamBlack
-      lbl.TextXAlignment = Enum.TextXAlignment.Center
-      lbl.TextYAlignment = Enum.TextYAlignment.Center
-      lbl.LineHeight = 0.92   -- le due righe di CUS/TOM restano compatte
-      -- >>> CUSTOM ANIM PACK BEGIN
-      -- Ancoraggio al CENTRO. Posizionando dal bordo sinistro, la posizione
-      -- del riquadro e la sua meta' larghezza vengono arrotondate a intero
-      -- separatamente, e i due errori si sommano in modo diverso da un
-      -- segmento all'altro: e' per questo che un numero solo (il "5")
-      -- risultava spostato di un pixel. Con AnchorPoint 0.5 il centro e'
-      -- l'unica cosa calcolata, quindi c'e' UN solo arrotondamento e tutti
-      -- i segmenti si comportano allo stesso modo.
-      -- <<< CUSTOM ANIM PACK END
-      lbl.AnchorPoint = Vector2.new(0.5, 0.5)
-      lbl.Size = UDim2.new(segW, 0, 1, 0)
-      lbl.Position = UDim2.new(segW * (i - 0.5), 0, 0.5, 0)
-      lbl.ZIndex = 8
-      lbl.Parent = animPackHolder
-      animBtnLabels[i] = lbl
-
-      local clickBtn = Instance.new("TextButton")
-      clickBtn.Name = "AnimPackClick_" .. tostring(i)
-      clickBtn.BackgroundTransparency = 1
-      clickBtn.Text = ""
-      clickBtn.AutoButtonColor = false
-      clickBtn.AnchorPoint = Vector2.new(0.5, 0.5)
-      clickBtn.Size = UDim2.new(segW, 0, 1, 0)
-      clickBtn.Position = UDim2.new(segW * (i - 0.5), 0, 0.5, 0)
-      clickBtn.ZIndex = 10
-      clickBtn.Parent = animPackHolder
-      local idx = i
-      clickBtn.MouseButton1Click:Connect(function()
-        if _G.AmousSetAnimPack then _G.AmousSetAnimPack(idx) end
-      end)
+    local function makeArrow(name, glyph, anchorX, posX)
+      local b = Instance.new("TextButton")
+      b.Name = name
+      b.AnchorPoint = Vector2.new(anchorX, 0.5)
+      b.Position = posX
+      b.Size = UDim2.new(0, 32, 0, 28)
+      b.BackgroundColor3 = COLORS.toggleBg
+      b.BackgroundTransparency = 0.1
+      b.BorderSizePixel = 0
+      b.AutoButtonColor = false
+      b.Text = glyph
+      b.TextColor3 = COLORS.white
+      b.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+      b.TextStrokeTransparency = 0.3
+      b.TextSize = 16
+      b.Font = Enum.Font.GothamBlack
+      b.ZIndex = 8
+      b.Parent = animPackHolder
+      corner(b, 10)
+      stroke(b, Color3.fromRGB(249, 249, 249), 1.2, 0.3)
+      return b
     end
+    local prevBtn = makeArrow("AnimPackPrev", "<", 0, UDim2.new(0, 66, 0.5, 0))
+    local nextBtn = makeArrow("AnimPackNext", ">", 1, UDim2.new(1, -8, 0.5, 0))
 
-    -- Funzione che aggiorna la posizione dello slide e la trasparenza dei testi
-    -- con velocità proporzionale alla distanza (come stretch rez)
-    local function applyAnimPackVisual(index)
-      index = math.clamp(tonumber(index) or 1, 1, NUM_PACKS)
-      local segW_scalar = 1 / NUM_PACKS
-      -- Velocità di transizione proporzionale alla distanza
-      local prevIdx = selectedAnimPackIndex or 1
-      local dist = math.abs(index - prevIdx)
-      local tweenTime = (dist <= 1) and 0.18 or math.clamp(0.08 * dist + 0.10, 0.18, 0.42)
-      -- >>> CUSTOM ANIM PACK BEGIN
-      -- Geometria SIMMETRICA. Prima la pillola era spostata di -1 px e
-      -- larga -3: il suo centro cadeva 2.5 px a sinistra del centro del
-      -- segmento, mentre le label sono centrate sul segmento. Da qui il
-      -- testo che sembra spinto a destra dentro la pillola (e sul primo
-      -- segmento, con l'offset +4, spinto a sinistra).
-      -- Con +2 di posizione e -4 di larghezza il centro della pillola
-      -- coincide esattamente con quello della label, per ogni indice.
-      -- Stesso centro delle label: concentrici per costruzione.
-      tween(animSlide, {
-        Position = UDim2.new(segW_scalar * (index - 0.5), 0, 0.5, 0),
-        Size = UDim2.new(segW_scalar, -4, 1, -8),
-      }, tweenTime)
-      -- <<< CUSTOM ANIM PACK END
-      for i, lbl in ipairs(animBtnLabels) do
-        local isSelected = (i == index)
-        tween(lbl, {
-          TextTransparency = isSelected and 0 or 0.22,
-          TextStrokeTransparency = isSelected and 0.2 or 0.45,
-        }, 0.14)
+    -- Zona del nome (taglia lo scorrimento laterale)
+    local nameClip = Instance.new("Frame")
+    nameClip.Name = "AnimPackNameClip"
+    nameClip.BackgroundTransparency = 1
+    nameClip.BorderSizePixel = 0
+    nameClip.ClipsDescendants = true
+    nameClip.Position = UDim2.new(0, 104, 0, 0)
+    nameClip.Size = UDim2.new(1, -148, 1, 0)
+    nameClip.ZIndex = 6
+    nameClip.Parent = animPackHolder
+
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Name = "AnimPackName"
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.AnchorPoint = Vector2.new(0.5, 0.5)
+    nameLbl.Position = UDim2.new(0.5, 0, 0.5, 0)
+    nameLbl.Size = UDim2.new(1, -6, 1, 0)
+    nameLbl.Text = PACK_NAMES[1]
+    nameLbl.TextColor3 = COLORS.white
+    nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameLbl.TextStrokeTransparency = 0.25
+    nameLbl.Font = Enum.Font.GothamBlack
+    nameLbl.TextSize = 12
+    nameLbl.TextScaled = true   -- i nomi lunghi (es. Wicked "Dancing Through Life") restano dentro la riga
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Center
+    nameLbl.TextYAlignment = Enum.TextYAlignment.Center
+    nameLbl.ZIndex = 7
+    nameLbl.Parent = nameClip
+    local nameSize = Instance.new("UITextSizeConstraint")
+    nameSize.MaxTextSize = 12
+    nameSize.MinTextSize = 6
+    nameSize.Parent = nameLbl
+
+    local lastIndex = nil
+    local function applyAnimPackVisual(index, enabled)
+      index = math.clamp(math.floor(tonumber(index) or 1), 1, NUM_PACKS)
+      if enabled == nil then enabled = _animPackSystemEnabled end
+      local okc, onColor = pcall(function() return _G._AmousToggleOnColor() end)
+      if not okc or typeof(onColor) ~= "Color3" then onColor = Color3.fromRGB(166, 166, 166) end
+      togBtn.Text = enabled and "ON" or "OFF"
+      tween(togBtn, {BackgroundColor3 = enabled and onColor or COLORS.toggleBg}, 0.14)
+      nameLbl.Text = PACK_NAMES[index]
+      if lastIndex and lastIndex ~= index then
+        -- il nome entra dal lato verso cui si sta scorrendo
+        local forward = (index - lastIndex) % NUM_PACKS
+        local dir = (forward <= NUM_PACKS / 2) and 1 or -1
+        nameLbl.TextTransparency = 1
+        nameLbl.TextStrokeTransparency = 1
+        nameLbl.Position = UDim2.new(0.5, 70 * dir, 0.5, 0)
+        tween(nameLbl, {
+          Position = UDim2.new(0.5, 0, 0.5, 0),
+          TextTransparency = 0,
+          TextStrokeTransparency = 0.25,
+        }, 0.18)
       end
+      lastIndex = index
     end
 
-    -- Esponi il visual callback al sistema logico
+    local function flash(btn)
+      tween(btn, {BackgroundTransparency = 0.45}, 0.08)
+      task.delay(0.08, function() tween(btn, {BackgroundTransparency = 0.1}, 0.08) end)
+    end
+
+    togBtn.MouseButton1Click:Connect(function()
+      flash(togBtn)
+      if _G.AmousSetAnimPack then _G.AmousSetAnimPack(nil, not _animPackSystemEnabled) end
+    end)
+    prevBtn.MouseButton1Click:Connect(function()
+      flash(prevBtn)
+      local i = (selectedAnimPackIndex or 1) - 1
+      if i < 1 then i = NUM_PACKS end
+      if _G.AmousSetAnimPack then _G.AmousSetAnimPack(i) end
+    end)
+    nextBtn.MouseButton1Click:Connect(function()
+      flash(nextBtn)
+      local i = (selectedAnimPackIndex or 1) + 1
+      if i > NUM_PACKS then i = 1 end
+      if _G.AmousSetAnimPack then _G.AmousSetAnimPack(i) end
+    end)
+
+    -- Esponi il callback visivo al sistema logico e inizializza dal config
     setAnimPackVisual = applyAnimPackVisual
-
-    -- Inizializza visuale con il valore caricato dal config
-    applyAnimPackVisual(selectedAnimPackIndex or 1)
+    applyAnimPackVisual(selectedAnimPackIndex or 1, _animPackSystemEnabled)
   end
-
-  -- >>> CUSTOM ANIM PACK BEGIN
-  -- ===== CUSTOM ANIMATION PACK ROW + PICKER =====
-  ;(function()
-    local SLOTS  = _G.AmousCustomAnimSlots
-    local LABELS = _G.AmousCustomAnimLabels
-
-    -- ---------- LA RIGA ----------
-    local capRow = baseRow(Utility, "Custom Animation Pack", 10)
-    capRow.Size = UDim2.new(1, -4, 0, 42)
-    -- >>> VISIBILE SOLO CON CUSTOM <<<
-    -- La riga serve solo quando e' selezionato il pack CUSTOM (indice 7).
-    -- Compare e scompare con la stessa animazione a tendina delle freccette.
-    capRow.ClipsDescendants = true
-    capRow.Visible = false
-
-    local capHolder = Instance.new("Frame")
-    capHolder.Name = "CustomAnimBtnHolder"
-    capHolder.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
-    capHolder.BackgroundTransparency = 0.28
-    capHolder.BorderSizePixel = 0
-    capHolder.Size = UDim2.new(0, 66, 0, 30)
-    capHolder.Position = UDim2.new(1, -73, 0.5, -15)
-    capHolder.ClipsDescendants = true
-    capHolder.ZIndex = 6
-    capHolder.Parent = capRow
-    corner(capHolder, 15)
-    stroke(capHolder, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
-
-    local capGrad = Instance.new("UIGradient")
-    capGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
-    })
-    capGrad.Rotation = 18
-    capGrad.Parent = capHolder
-    _G._AmousRegAccent(capHolder, capGrad, "pick")
-
-    local capBtn = Instance.new("TextButton")
-    capBtn.Name = "CustomAnimButton"
-    capBtn.BackgroundTransparency = 1
-    capBtn.Text = "PICK"
-    capBtn.TextColor3 = COLORS.white
-    capBtn.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    capBtn.TextStrokeTransparency = 0.3
-    capBtn.TextSize = 12
-    capBtn.Font = Enum.Font.GothamBlack
-    capBtn.TextXAlignment = Enum.TextXAlignment.Center
-    capBtn.Size = UDim2.new(1, 0, 1, 0)
-    capBtn.Position = UDim2.new(0, 0, 0, 0)
-    capBtn.BorderSizePixel = 0
-    capBtn.ZIndex = 8
-    capBtn.AutoButtonColor = false
-    capBtn.Parent = capHolder
-    capBtn.MouseEnter:Connect(function()
-      tween(capHolder, {Size = UDim2.new(0, 72, 0, 32), Position = UDim2.new(1, -76, 0.5, -16)}, 0.12)
-    end)
-    capBtn.MouseLeave:Connect(function()
-      tween(capHolder, {Size = UDim2.new(0, 66, 0, 30), Position = UDim2.new(1, -73, 0.5, -15)}, 0.12)
-    end)
-
-    -- Il contatore accanto al PICK e' stato tolto: quanti slot sono
-    -- impostati si vede aprendo il picker, e nessun'altra riga della hub
-    -- mostra un valore li'.
-    local function refreshCount() end
-    _G.AmousCustomAnimRefreshRow = refreshCount
-
-    -- >>> VISIBILE SOLO CON CUSTOM <<<
-    -- animate = false allo start e al load config (deve solo trovarsi gia'
-    -- nello stato giusto), true quando l'utente cambia pack.
-    _G.AmousCustomAnimSetRowVisible = function(show, animate)
-      show = show and true or false
-      if animate == false then
-        capRow.Visible = show
-        capRow.Size = UDim2.new(1, -4, 0, show and 42 or 0)
-        return
-      end
-      if show then
-        if capRow.Visible and capRow.Size.Y.Offset >= 42 then return end
-        capRow.Visible = true
-        capRow.Size = UDim2.new(1, -4, 0, 0)
-        tween(capRow, {Size = UDim2.new(1, -4, 0, 42)}, 0.22)
-      else
-        if not capRow.Visible then return end
-        tween(capRow, {Size = UDim2.new(1, -4, 0, 0)}, 0.18)
-        task.delay(0.19, function()
-          if capRow.Parent and capRow.Size.Y.Offset <= 1 then capRow.Visible = false end
-        end)
-      end
-    end
-
-    _G.AmousCustomAnimSetRowVisible(selectedAnimPackIndex == 7, false)
-
-    -- ---------- IL PICKER ----------
-    local capGui = nil
-    local cardRefs = {}
-    -- Stessa guardia del Tab Position: il backdrop non assorbe il click,
-    -- quindi senza questa il PICK richiuderebbe e riaprirebbe subito.
-    local capJustClosedAt = 0
-
-    -- Dissolvenza come gli altri picker, non rimpicciolimento.
-    local function closeCap()
-      if capGui and capGui.Parent then
-        local f = capGui:FindFirstChild("Frame")
-        if f then
-          TweenService:Create(f, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-        end
-        local g = capGui
-        capGui = nil
-        cardRefs = {}
-        capJustClosedAt = tick()
-        task.delay(0.25, function() pcall(function() g:Destroy() end) end)
-      end
-    end
-    _G.AmousCustomAnimClose = closeCap
-
-    -- Aggiorna una card dopo che l'ID e' stato messo o tolto.
-    local function refreshCard(slot)
-      local r = cardRefs[slot]
-      if not r then return end
-      local id = _G.AmousCustomAnimIds[slot] or ""
-      if id ~= "" then
-        r.mark.Text = "\u{2713}"
-        r.mark.TextSize = 18
-        r.mark.TextColor3 = Color3.fromRGB(120, 220, 150)
-        r.sub.Text = id
-        r.sub.TextSize = 9
-        r.sub.TextColor3 = Color3.fromRGB(120, 220, 150)
-        r.stroke.Color = Color3.fromRGB(120, 220, 150)
-        r.stroke.Thickness = 1.5
-        r.stroke.Transparency = 0.12
-        r.clear.Visible = true
-      else
-        r.mark.Text = "+"
-        r.mark.TextSize = 24
-        r.mark.TextColor3 = Color3.fromRGB(200, 200, 215)
-        r.sub.Text = "ADD"
-        r.sub.TextSize = 10
-        r.sub.TextColor3 = Color3.fromRGB(140, 140, 155)
-        r.stroke.Color = Color3.fromRGB(50, 50, 58)
-        r.stroke.Thickness = 1
-        r.stroke.Transparency = 0.5
-        r.clear.Visible = false
-      end
-      refreshCount()
-    end
-
-    -- ---------- MINI POPUP ASSET ID (stile Custom Background) ----------
-    local function openAssetPopup(slot)
-      if not capGui or not capGui.Parent then return end
-      local pickerMain = capGui:FindFirstChild("Frame")
-      if not pickerMain then return end
-
-      local miniOverlay = Instance.new("Frame")
-      miniOverlay.Name = "AddAnimMiniOverlay"
-      miniOverlay.Size = UDim2.new(1, 0, 1, 0)
-      miniOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-      miniOverlay.BackgroundTransparency = 0.48
-      miniOverlay.BorderSizePixel = 0
-      miniOverlay.ZIndex = 100
-      miniOverlay.Parent = pickerMain
-      local oc = Instance.new("UICorner")
-      oc.CornerRadius = UDim.new(0, 16)
-      oc.Parent = miniOverlay
-
-      local outsideClose = Instance.new("TextButton")
-      outsideClose.Size = UDim2.new(1, 0, 1, 0)
-      outsideClose.BackgroundTransparency = 1
-      outsideClose.Text = ""
-      outsideClose.AutoButtonColor = false
-      outsideClose.ZIndex = 100
-      outsideClose.Parent = miniOverlay
-      outsideClose.MouseButton1Click:Connect(function() miniOverlay:Destroy() end)
-
-      local miniPanel = Instance.new("Frame")
-      miniPanel.Name = "AddAnimPanel"
-      miniPanel.AnchorPoint = Vector2.new(0.5, 0.5)
-      miniPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
-      miniPanel.Size = UDim2.new(0, 300, 0, 158)
-      miniPanel.BackgroundColor3 = Color3.fromRGB(6, 6, 9)
-      miniPanel.BorderSizePixel = 0
-      miniPanel.ZIndex = 101
-      miniPanel.ClipsDescendants = true
-      miniPanel.Parent = miniOverlay
-      corner(miniPanel, 16)
-      stroke(miniPanel, COLORS.stroke, 1.1, 0.3)
-
-      local mHeader = Instance.new("Frame")
-      mHeader.Size = UDim2.new(1, 0, 0, 42)
-      mHeader.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
-      mHeader.BackgroundTransparency = 0.1
-      mHeader.BorderSizePixel = 0
-      mHeader.ZIndex = 102
-      mHeader.Parent = miniPanel
-      corner(mHeader, 16)
-
-      local mTitle = Instance.new("TextLabel")
-      mTitle.Size = UDim2.new(1, -52, 1, 0)
-      mTitle.Position = UDim2.new(0, 14, 0, 0)
-      mTitle.BackgroundTransparency = 1
-      mTitle.Text = "ASSET ID  \u{2014}  " .. (LABELS[slot] or slot)
-      mTitle.TextColor3 = COLORS.white
-      mTitle.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-      mTitle.TextStrokeTransparency = 0.3
-      mTitle.Font = Enum.Font.GothamBlack
-      mTitle.TextSize = 13
-      mTitle.TextXAlignment = Enum.TextXAlignment.Left
-      mTitle.ZIndex = 103
-      mTitle.Parent = mHeader
-
-      local mCloseBtn = Instance.new("TextButton")
-      mCloseBtn.Size = UDim2.new(0, 28, 0, 28)
-      mCloseBtn.Position = UDim2.new(1, -36, 0.5, -14)
-      mCloseBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-      mCloseBtn.BackgroundTransparency = 0.28
-      mCloseBtn.BorderSizePixel = 0
-      mCloseBtn.Text = "-"
-      mCloseBtn.TextColor3 = COLORS.white
-      mCloseBtn.TextSize = 18
-      mCloseBtn.Font = Enum.Font.GothamSemibold
-      mCloseBtn.AutoButtonColor = false
-      mCloseBtn.ZIndex = 104
-      mCloseBtn.Parent = mHeader
-      corner(mCloseBtn, 8)
-      stroke(mCloseBtn, COLORS.stroke, 1, 0.35)
-      mCloseBtn.MouseButton1Click:Connect(function() miniOverlay:Destroy() end)
-
-      local mDivider = Instance.new("Frame")
-      mDivider.Size = UDim2.new(1, -28, 0, 1)
-      mDivider.Position = UDim2.new(0, 14, 0, 42)
-      mDivider.BackgroundColor3 = Color3.fromRGB(70, 70, 82)
-      mDivider.BackgroundTransparency = 0.45
-      mDivider.BorderSizePixel = 0
-      mDivider.ZIndex = 102
-      mDivider.Parent = miniPanel
-
-      local mBoxHolder = Instance.new("Frame")
-      mBoxHolder.Size = UDim2.new(1, -24, 0, 36)
-      mBoxHolder.Position = UDim2.new(0, 12, 0, 52)
-      mBoxHolder.BackgroundColor3 = COLORS.row2
-      mBoxHolder.BackgroundTransparency = 0.1
-      mBoxHolder.BorderSizePixel = 0
-      mBoxHolder.ZIndex = 102
-      mBoxHolder.Parent = miniPanel
-      corner(mBoxHolder, 9)
-      stroke(mBoxHolder, COLORS.strokeSoft, 1, 0.38)
-
-      local mBox = Instance.new("TextBox")
-      mBox.Name = "AssetInput"
-      mBox.Size = UDim2.new(1, -16, 1, 0)
-      mBox.Position = UDim2.new(0, 8, 0, 0)
-      mBox.BackgroundTransparency = 1
-      mBox.BorderSizePixel = 0
-      mBox.PlaceholderText = "Insert The Asset ID"
-      mBox.PlaceholderColor3 = Color3.fromRGB(80, 80, 92)
-      mBox.Text = _G.AmousCustomAnimIds[slot] or ""
-      mBox.TextColor3 = COLORS.white
-      mBox.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-      mBox.TextStrokeTransparency = 0.4
-      mBox.Font = Enum.Font.GothamSemibold
-      mBox.TextSize = 12
-      mBox.ClearTextOnFocus = false
-      mBox.ZIndex = 103
-      mBox.Parent = mBoxHolder
-
-      local mErr = Instance.new("TextLabel")
-      mErr.Size = UDim2.new(1, -24, 0, 14)
-      mErr.Position = UDim2.new(0, 12, 0, 94)
-      mErr.BackgroundTransparency = 1
-      mErr.Text = ""
-      mErr.TextColor3 = Color3.fromRGB(255, 75, 75)
-      mErr.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-      mErr.TextStrokeTransparency = 0.4
-      mErr.Font = Enum.Font.GothamSemibold
-      mErr.TextSize = 10
-      mErr.TextXAlignment = Enum.TextXAlignment.Left
-      mErr.ZIndex = 102
-      mErr.Parent = miniPanel
-
-      local mConfirmHolder = Instance.new("Frame")
-      mConfirmHolder.Size = UDim2.new(1, -24, 0, 32)
-      mConfirmHolder.Position = UDim2.new(0, 12, 0, 114)
-      mConfirmHolder.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-      mConfirmHolder.BackgroundTransparency = 0.28
-      mConfirmHolder.BorderSizePixel = 0
-      mConfirmHolder.ZIndex = 102
-      mConfirmHolder.Parent = miniPanel
-      corner(mConfirmHolder, 9)
-      stroke(mConfirmHolder, Color3.fromRGB(235, 235, 245), 1, 0.28)
-
-      local mConfirm = Instance.new("TextButton")
-      mConfirm.Size = UDim2.new(1, 0, 1, 0)
-      mConfirm.BackgroundTransparency = 1
-      mConfirm.BorderSizePixel = 0
-      mConfirm.Text = "CONFIRM"
-      mConfirm.TextColor3 = COLORS.white
-      mConfirm.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-      mConfirm.TextStrokeTransparency = 0.22
-      mConfirm.Font = Enum.Font.GothamBlack
-      mConfirm.TextSize = 11
-      mConfirm.AutoButtonColor = false
-      mConfirm.ZIndex = 103
-      mConfirm.Parent = mConfirmHolder
-      mConfirm.MouseEnter:Connect(function()
-        TweenService:Create(mConfirmHolder, TweenInfo.new(0.12), {BackgroundTransparency = 0.1}):Play()
-      end)
-      mConfirm.MouseLeave:Connect(function()
-        TweenService:Create(mConfirmHolder, TweenInfo.new(0.12), {BackgroundTransparency = 0.28}):Play()
-      end)
-
-      local isChecking = false
-      local function tryConfirm()
-        if isChecking then return end
-        local raw = mBox.Text:match("^%s*(.-)%s*$")
-        if raw == "" then mErr.Text = "Invalid Asset Please Try Again" return end
-        local assetId = raw:match("^(%d+)$") or raw:match("rbxassetid://(%d+)$")
-        if not assetId then mErr.Text = "Invalid Asset Please Try Again" return end
-
-        isChecking = true
-        mErr.Text = ""
-        mConfirm.Text = "CHECKING..."
-        TweenService:Create(mConfirmHolder, TweenInfo.new(0.12), {BackgroundTransparency = 0.55}):Play()
-
-        task.spawn(function()
-          -- Validazione come Uranium: si scarica l'asset e si cerca dentro
-          -- una Animation. Un ID che carica ma non contiene animazioni non
-          -- va accettato, altrimenti il pack parte e non si muove niente.
-          local url = "rbxassetid://" .. assetId
-          local valid = false
-          pcall(function()
-            local objs = game:GetObjects(url)
-            if objs then
-              for _, obj in pairs(objs) do
-                if obj:IsA("Animation") then valid = true return end
-                local deep = obj:FindFirstChildWhichIsA("Animation", true)
-                if deep then valid = true return end
-              end
-            end
-          end)
-          -- Ripiego: alcuni asset non tornano oggetti ma esistono davvero.
-          if not valid then
-            local tempImg = Instance.new("ImageLabel")
-            tempImg.Image = url
-            tempImg.Parent = miniOverlay
-            local timeout = tick() + 4
-            repeat task.wait(0.05) until tempImg.IsLoaded or tick() > timeout
-            valid = tempImg.IsLoaded
-            tempImg:Destroy()
-          end
-
-          if not miniOverlay or not miniOverlay.Parent then return end
-          if valid then
-            _G.AmousCustomAnimIds[slot] = assetId
-            refreshCard(slot)
-            saveAmousConfig()
-            if _G.AmousReloadCustomAnimPack then
-              pcall(_G.AmousReloadCustomAnimPack)
-            end
-            miniOverlay:Destroy()
-          else
-            isChecking = false
-            mErr.Text = "Invalid Asset Please Try Again"
-            mConfirm.Text = "CONFIRM"
-            TweenService:Create(mConfirmHolder, TweenInfo.new(0.12), {BackgroundTransparency = 0.28}):Play()
-          end
-        end)
-      end
-
-      mConfirm.MouseButton1Click:Connect(tryConfirm)
-      mBox.FocusLost:Connect(function(enter) if enter then tryConfirm() end end)
-      task.delay(0.05, function() if mBox and mBox.Parent then mBox:CaptureFocus() end end)
-    end
-
-    -- ---------- APERTURA DEL PICKER ----------
-    capBtn.Activated:Connect(function()
-      if capGui and capGui.Parent then closeCap() return end
-      if tick() - capJustClosedAt < 0.25 then return end
-
-      capGui = Instance.new("ScreenGui")
-      capGui.Name = "AmousHubCustomAnimPicker"
-      capGui.ResetOnSpawn = false
-      capGui.IgnoreGuiInset = true
-      capGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-      capGui.DisplayOrder = 9999
-      capGui.Parent = HubGui
-
-      local backdrop = Instance.new("Frame")
-      backdrop.Name = "Backdrop"
-      backdrop.Size = UDim2.new(1, 0, 1, 0)
-      backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-      backdrop.BackgroundTransparency = 0.5
-      backdrop.BorderSizePixel = 0
-      backdrop.ZIndex = 1
-      backdrop.Parent = capGui
-      backdrop.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-          or input.UserInputType == Enum.UserInputType.Touch then closeCap() end
-      end)
-
-      local frame = Instance.new("Frame")
-      frame.Name = "Frame"
-      frame.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-      frame.BorderSizePixel = 0
-      frame.ZIndex = 2
-      frame.Parent = capGui
-      corner(frame, 16)
-      stroke(frame, Color3.fromRGB(90, 90, 105), 1.2, 0.3)
-
-      local titleBar = Instance.new("Frame")
-      titleBar.Size = UDim2.new(1, 0, 0, 48)
-      titleBar.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
-      titleBar.BackgroundTransparency = 0.15
-      titleBar.BorderSizePixel = 0
-      titleBar.ZIndex = 3
-      titleBar.Parent = frame
-      corner(titleBar, 16)
-
-      local title = Instance.new("TextLabel")
-      title.BackgroundTransparency = 1
-      title.Text = "CUSTOM ANIMATION PACK"
-      title.TextColor3 = Color3.fromRGB(255, 255, 255)
-      title.Font = Enum.Font.GothamBlack
-      title.TextSize = 16
-      title.TextXAlignment = Enum.TextXAlignment.Left
-      title.Size = UDim2.new(1, -60, 1, 0)
-      title.Position = UDim2.new(0, 18, 0, 0)
-      title.ZIndex = 4
-      title.Parent = titleBar
-
-      -- Chiusura del popup GRANDE: X, come tutti gli altri picker della hub
-      -- (Custom Background, Sky Theme, Music Player). Il "-" resta solo sul
-      -- mini popup dell'Asset ID, dove la Custom Background usa quello.
-      local closeBtn = Instance.new("TextButton")
-      closeBtn.Name = "CloseBtn"
-      closeBtn.Size = UDim2.new(0, 36, 0, 36)
-      closeBtn.Position = UDim2.new(1, -44, 0, 6)
-      closeBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
-      closeBtn.BackgroundTransparency = 0.1
-      closeBtn.BorderSizePixel = 0
-      closeBtn.Text = "X"
-      closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-      closeBtn.Font = Enum.Font.GothamBlack
-      closeBtn.TextSize = 14
-      closeBtn.AutoButtonColor = false
-      closeBtn.ZIndex = 4
-      closeBtn.Parent = titleBar
-      corner(closeBtn, 10)
-      stroke(closeBtn, Color3.fromRGB(90, 90, 105), 1, 0.4)
-      closeBtn.MouseEnter:Connect(function()
-        TweenService:Create(closeBtn, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(180, 50, 50)}):Play()
-      end)
-      closeBtn.MouseLeave:Connect(function()
-        TweenService:Create(closeBtn, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(25, 25, 28)}):Play()
-      end)
-      closeBtn.Activated:Connect(closeCap)
-
-      -- Contenuto dentro una ScrollingFrame, esattamente come il Background
-      -- Changer: e' quella a dare a tutti i picker della hub lo stesso
-      -- comportamento in apertura, perche' ritaglia da sola e il contenuto
-      -- resta contenuto mentre il riquadro cresce.
-      local scrollFrame = Instance.new("ScrollingFrame")
-      scrollFrame.Name = "Scroll"
-      scrollFrame.Size = UDim2.new(1, -16, 1, -64)
-      scrollFrame.Position = UDim2.new(0, 8, 0, 56)
-      scrollFrame.BackgroundTransparency = 1
-      scrollFrame.BorderSizePixel = 0
-      scrollFrame.ScrollBarThickness = 4
-      scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 90)
-      scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-      scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-      scrollFrame.ZIndex = 3
-      scrollFrame.Parent = frame
-
-      local grid = Instance.new("UIGridLayout")
-      grid.CellSize = UDim2.new(0, 165, 0, 76)
-      grid.CellPadding = UDim2.new(0, 8, 0, 8)
-      grid.FillDirection = Enum.FillDirection.Horizontal
-      grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-      grid.SortOrder = Enum.SortOrder.LayoutOrder
-      grid.Parent = scrollFrame
-
-      local gridPad = Instance.new("UIPadding", scrollFrame)
-      gridPad.PaddingLeft = UDim.new(0, 8)
-      gridPad.PaddingTop = UDim.new(0, 8)
-      gridPad.PaddingRight = UDim.new(0, 8)
-      gridPad.PaddingBottom = UDim.new(0, 8)
-
-      cardRefs = {}
-      for i, slot in ipairs(SLOTS) do
-        local card = Instance.new("TextButton")
-        card.Name = slot
-        card.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
-        card.BorderSizePixel = 0
-        card.Text = ""
-        card.AutoButtonColor = false
-        card.LayoutOrder = i
-        card.ZIndex = 3
-        card.Parent = scrollFrame
-        corner(card, 12)
-        local cs = stroke(card, Color3.fromRGB(50, 50, 58), 1, 0.5)
-
-        local nameLbl = Instance.new("TextLabel")
-        nameLbl.BackgroundTransparency = 1
-        nameLbl.Text = LABELS[slot] or slot
-        nameLbl.TextColor3 = COLORS.white
-        nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        nameLbl.TextStrokeTransparency = 0.3
-        nameLbl.Font = Enum.Font.GothamBlack
-        nameLbl.TextSize = 11
-        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-        nameLbl.Size = UDim2.new(1, -20, 0, 16)
-        nameLbl.Position = UDim2.new(0, 12, 0, 8)
-        nameLbl.ZIndex = 5
-        nameLbl.Parent = card
-
-        local mark = Instance.new("TextLabel")
-        mark.BackgroundTransparency = 1
-        mark.Font = Enum.Font.GothamBlack
-        mark.TextXAlignment = Enum.TextXAlignment.Center
-        mark.Size = UDim2.new(0, 30, 0, 30)
-        mark.Position = UDim2.new(0, 10, 0, 30)
-        mark.ZIndex = 5
-        mark.Parent = card
-
-        local sub = Instance.new("TextLabel")
-        sub.BackgroundTransparency = 1
-        sub.Font = Enum.Font.GothamSemibold
-        sub.TextXAlignment = Enum.TextXAlignment.Left
-        sub.TextTruncate = Enum.TextTruncate.AtEnd
-        sub.Size = UDim2.new(1, -78, 0, 30)
-        sub.Position = UDim2.new(0, 42, 0, 30)
-        sub.ZIndex = 5
-        sub.Parent = card
-
-        -- X identica a quella delle miniature Custom Background: una "X"
-        -- maiuscola normale, non il simbolo Unicode. GothamBlack non ha il
-        -- glifo U+2715 e Roblox al suo posto disegna il rettangolo del
-        -- carattere mancante.
-        local clear = Instance.new("TextButton")
-        clear.Name = "Clear"
-        clear.Size = UDim2.new(0, 22, 0, 22)
-        clear.Position = UDim2.new(1, -26, 0, 5)
-        clear.BackgroundTransparency = 1
-        clear.BorderSizePixel = 0
-        clear.Text = "X"
-        clear.TextColor3 = Color3.fromRGB(255, 55, 55)
-        clear.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        clear.TextStrokeTransparency = 0
-        clear.Font = Enum.Font.GothamBlack
-        clear.TextSize = 14
-        clear.AutoButtonColor = false
-        clear.Visible = false
-        clear.ZIndex = 9
-        clear.Parent = card
-        clear.MouseEnter:Connect(function()
-          TweenService:Create(clear, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(255, 110, 110)}):Play()
-        end)
-        clear.MouseLeave:Connect(function()
-          TweenService:Create(clear, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(255, 55, 55)}):Play()
-        end)
-        clear.MouseButton1Click:Connect(function()
-          _G.AmousCustomAnimIds[slot] = ""
-          refreshCard(slot)
-          saveAmousConfig()
-          if _G.AmousReloadCustomAnimPack then
-            pcall(_G.AmousReloadCustomAnimPack)
-          end
-        end)
-
-        card.MouseEnter:Connect(function()
-          tween(card, {BackgroundColor3 = Color3.fromRGB(22, 22, 28)}, 0.12)
-        end)
-        card.MouseLeave:Connect(function()
-          tween(card, {BackgroundColor3 = Color3.fromRGB(14, 14, 18)}, 0.12)
-        end)
-        card.Activated:Connect(function() openAssetPopup(slot) end)
-
-        cardRefs[slot] = {mark = mark, sub = sub, stroke = cs, clear = clear}
-        refreshCard(slot)
-      end
-
-      frame.Size = UDim2.new(0, 0, 0, 0)
-      frame.Position = UDim2.new(0.5, 0, 0.5, 0)
-      TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 380, 0, 336),
-        Position = UDim2.new(0.5, -190, 0.5, -168)
-      }):Play()
-    end)
-  end)()
-  -- <<< CUSTOM ANIM PACK END
 
   -- ===== AVATAR (HEADLESS, KORBLOX) =====
   section(Utility, "AVATAR", 11)
@@ -25641,14 +24815,6 @@ end
       if _SV.setMotionBlurVisual then _SV.setMotionBlurVisual(false) end
       skyTheme = "Off"; currentBackground = 1; customBgIds = {}; customBgSelected = nil
       -- >>> TAB POSITION BEGIN
-      -- >>> CUSTOM ANIM PACK BEGIN
-      for _, _slot in ipairs(_G.AmousCustomAnimSlots) do
-        _G.AmousCustomAnimIds[_slot] = ""
-      end
-      if _G.AmousCustomAnimClose then pcall(_G.AmousCustomAnimClose) end
-      if _G.AmousCustomAnimRefreshRow then pcall(_G.AmousCustomAnimRefreshRow) end
-      if _G.AmousCustomAnimSetRowVisible then pcall(_G.AmousCustomAnimSetRowVisible, false, false) end
-      -- <<< CUSTOM ANIM PACK END
       -- >>> CUSTOM FONTS <<< si torna ai font originali di ogni elemento
       if _G.AmousFonts then pcall(_G.AmousFonts.set, "Default", true) end
       if _G.AmousFontPickerClose then pcall(_G.AmousFontPickerClose) end
@@ -25688,10 +24854,8 @@ end
       unwalkEnabled = false
       -- Reset animation pack
       selectedAnimPackIndex = 1
-      _animPackSavedIndex = 1
       _animPackSystemEnabled = false
-      _animPackUnwalkWasActive = false
-      if _G.AmousSetAnimPack then pcall(function() _G.AmousSetAnimPack(1) end) end
+      if _G.AmousSetAnimPack then pcall(function() _G.AmousSetAnimPack(1, false, true) end) end
       antiDieEnabled = false
       _G._AmousAntiDieUserWanted = false
       _G._AmousAntiDieAutoOn = false
@@ -27211,13 +26375,8 @@ _G.AmousDuelsApplySavedGameplayStates = function()
     if skyValueLabel then skyValueLabel.Text = skyTheme or "Off" end
   end)
   pcall(function()
-    if selectedAnimPackIndex and selectedAnimPackIndex ~= 1 and _G.AmousSetAnimPack then
-      _G.AmousSetAnimPack(selectedAnimPackIndex)
-    end
-    if setAnimPackVisual then setAnimPackVisual(selectedAnimPackIndex or 1) end
-    -- >>> VISIBILE SOLO CON CUSTOM <<< allineamento dopo il load config
-    if _G.AmousCustomAnimSetRowVisible then
-      _G.AmousCustomAnimSetRowVisible((selectedAnimPackIndex or 1) == 7, false)
+    if _G.AmousSetAnimPack then
+      _G.AmousSetAnimPack(selectedAnimPackIndex or 1, _animPackSystemEnabled == true, true)
     end
   end)
 end
