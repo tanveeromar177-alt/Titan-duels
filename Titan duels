@@ -4341,8 +4341,8 @@ function _G.AmousValidTabPosition(v)
   return "Up"
 end
 -- <<< TAB POSITION END
-local amousGuiScaleValue = 0.75
-local amousProgressBarScaleValue = 0.90
+local amousGuiScaleValue = 0.60
+local amousProgressBarScaleValue = 0.55
 
 CONFIG_FILE = "AmousHub_Config.json"
 KEYBINDS_CONFIG_FILE = "AmousHub_Keybinds.json"
@@ -12205,7 +12205,6 @@ end
 -- APERTURA: rientra dallo stesso bordo con frenata elastica
 _G.AmousHubOpen = function()
   _G.__AmousDuelsMinimized = false
-  if _G.AmousIdleWake then _G.AmousIdleWake() end
   _G._AmousHubAnimToken = _G._AmousHubAnimToken + 1
   local token = _G._AmousHubAnimToken
   _G._AmousMiniPop(false)
@@ -12235,135 +12234,6 @@ _G.AmousHubOpen = function()
   end)
 end
 -- <<< HUB OPEN/CLOSE ANIMATION END
-
--- >>> IDLE FADE BEGIN
--- 5 secondi senza toccare la hub -> tutto il contenuto va a 0.7 di
--- trasparenza. Al primo contatto torna com'era. Lo sfondo non si tocca.
---
--- COME, e perche' cosi': i tentativi precedenti scrivevano la trasparenza su
--- ogni singolo elemento, cioe' sulle STESSE proprieta' che usa l'effetto
--- hover delle righe. I due si pestavano i piedi e le righe restavano
--- inchiodate sullo stato di hover. Qui invece il contenuto viene messo
--- dentro un CanvasGroup e si anima solo la sua GroupTransparency: una
--- proprieta' sola, sul contenitore. Nessuna proprieta' dei figli viene mai
--- toccata, quindi l'hover continua a funzionare per conto suo e il
--- ripristino e' esatto per definizione.
---
--- NOTA LOCAL: niente local a livello di chunk, il main e' al limite.
-_G._AmousIdle = {
-  delay    = 5,      -- secondi di inattivita'
-  value    = 0.7,    -- trasparenza da raggiungere
-  fadeOut  = 0.3,    -- durata dello sbiadire
-  fadeIn   = 0.14,   -- durata del ritorno: corto, deve sembrare immediato
-  last     = os.clock(),
-  faded    = false,
-  group    = nil,
-  started  = false,
-}
-
--- Cosa NON va spostato dentro il gruppo: lo sfondo e i modificatori di
--- layout, che devono restare figli diretti di Main.
-_G._AmousIdleStays = function(ch)
-  if ch.Name == "CustomBackground" then return true end
-  if ch:IsA("UICorner") or ch:IsA("UIStroke") or ch:IsA("UIScale")
-     or ch:IsA("UIPadding") or ch:IsA("UIListLayout") or ch:IsA("UIGradient")
-     or ch:IsA("UIAspectRatioConstraint") or ch:IsA("UISizeConstraint") then
-    return true
-  end
-  return false
-end
-
-_G._AmousIdleEnsureGroup = function()
-  local S = _G._AmousIdle
-  if S.group and S.group.Parent then return S.group end
-
-  local ok, g = pcall(function() return Instance.new("CanvasGroup") end)
-  if not ok or not g then return nil end   -- client vecchio: si rinuncia, meglio che rompere
-
-  g.Name = "AmousFadeGroup"
-  g.BackgroundTransparency = 1
-  g.BorderSizePixel = 0
-  g.Size = UDim2.new(1, 0, 1, 0)
-  g.Position = UDim2.new(0, 0, 0, 0)
-  g.ZIndex = 2                -- sopra lo sfondo (ZIndex 1), sotto niente
-  g.GroupTransparency = 0
-  g.Active = false            -- non intercetta input: il drag di Main resta com'e'
-  g.Parent = Main
-
-  for _, ch in ipairs(Main:GetChildren()) do
-    if ch ~= g and not _G._AmousIdleStays(ch) then
-      ch.Parent = g
-    end
-  end
-
-  -- Se qualcosa viene creato dopo e appeso a Main, entra anche lui.
-  Main.ChildAdded:Connect(function(ch)
-    if ch == g or _G._AmousIdleStays(ch) then return end
-    task.defer(function()
-      if ch.Parent == Main then ch.Parent = g end
-    end)
-  end)
-
-  S.group = g
-  return g
-end
-
-_G._AmousIdleSet = function(fade)
-  local S = _G._AmousIdle
-  local g = _G._AmousIdleEnsureGroup()
-  if not g then return end
-  S.faded = fade and true or false
-  TweenService:Create(g,
-    TweenInfo.new(fade and S.fadeOut or S.fadeIn,
-                  Enum.EasingStyle.Quad,
-                  fade and Enum.EasingDirection.Out or Enum.EasingDirection.Out),
-    { GroupTransparency = fade and S.value or 0 }):Play()
-end
-
-_G.AmousIdleWake = function()
-  local S = _G._AmousIdle
-  S.last = os.clock()
-  if S.faded then _G._AmousIdleSet(false) end
-end
-
-_G.AmousIdleStart = function()
-  local S = _G._AmousIdle
-  if S.started then return end
-  S.started = true
-
-  -- mouse e touch sulla finestra
-  Main.InputBegan:Connect(_G.AmousIdleWake)
-  Main.InputChanged:Connect(_G.AmousIdleWake)
-  Main.MouseEnter:Connect(_G.AmousIdleWake)
-
-  -- controller: non ha puntatore, si sveglia su qualsiasi input gamepad
-  UserInputService.InputBegan:Connect(function(input)
-    local t = input.UserInputType
-    if t == Enum.UserInputType.Gamepad1 or t == Enum.UserInputType.Gamepad2
-       or t == Enum.UserInputType.Gamepad3 or t == Enum.UserInputType.Gamepad4 then
-      _G.AmousIdleWake()
-    end
-  end)
-
-  task.spawn(function()
-    while true do
-      task.wait(0.25)
-      if Main.Visible and not _G._AmousHubAnimating then
-        if not S.faded and (os.clock() - S.last) >= S.delay then
-          _G._AmousIdleSet(true)
-        end
-      elseif S.faded then
-        _G._AmousIdleSet(false)
-        S.last = os.clock()
-      end
-    end
-  end)
-end
-
-task.defer(function()
-  pcall(_G.AmousIdleStart)
-end)
--- <<< IDLE FADE END
 
 local BackgroundIDs = {
   "105768583494591",
@@ -12508,40 +12378,13 @@ Close.Parent = Main
 corner(Close, 8)
 stroke(Close, COLORS.stroke, 1, 0.35)
 
-AmousLockTopButton = Instance.new("TextButton")
-AmousLockTopButton.Name = "LockGUI"
-AmousLockTopButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-AmousLockTopButton.BackgroundTransparency = 0.28
-AmousLockTopButton.TextColor3 = COLORS.white
-AmousLockTopButton.TextSize = 8
-AmousLockTopButton.Font = Enum.Font.GothamBlack
-AmousLockTopButton.Size = UDim2.new(0, 32, 0, 28)
-AmousLockTopButton.Position = UDim2.new(0, 12, 0, 10)   -- spostato a sinistra
-AmousLockTopButton.AutoButtonColor = false
-AmousLockTopButton.ZIndex = 5
-AmousLockTopButton.Parent = Main
-corner(AmousLockTopButton, 8)
-stroke(AmousLockTopButton, COLORS.stroke, 1, 0.35)
-
+-- Il bottone LOCK/UNLOCK in alto a sinistra e' stato tolto: il blocco si
+-- comanda dal toggle "Lock GUI" nella sezione MOBILE BUTTONS delle Settings.
+-- La funzione resta perche' load config e Reset All Settings la chiamano per
+-- riallineare il toggle allo stato salvato.
 function AmousUpdateGuiLockVisual()
-  if AmousLockTopButton then
-    AmousLockTopButton.Text = (_G.AmousGuiLocked == true) and "UNLOCK" or "LOCK"
-    AmousLockTopButton.BackgroundTransparency = (_G.AmousGuiLocked == true) and 0.08 or 0.28
-    local st = AmousLockTopButton:FindFirstChildOfClass("UIStroke")
-    if st then
-      st.Transparency = (_G.AmousGuiLocked == true) and 0.08 or 0.35
-      st.Color = (_G.AmousGuiLocked == true) and Color3.fromRGB(255,255,255) or COLORS.stroke
-    end
-  end
   if setLockGuiVisual then pcall(setLockGuiVisual, _G.AmousGuiLocked == true) end
 end
-
-AmousLockTopButton.Activated:Connect(function()
-  _G.AmousGuiLocked = not (_G.AmousGuiLocked == true)
-  AmousUpdateGuiLockVisual()
-  saveAmousConfig()
-end)
-AmousUpdateGuiLockVisual()
 
 local Content = Instance.new("Frame")
 Content.Name = "Content"
@@ -12568,7 +12411,7 @@ TabLayout.Parent = Tabs
 
 local pages = {}
 local tabButtons = {}
-local tabNames = {"MOVEMENT", "COMBAT", "KEYBINDS", "VISUALS", "SETTINGS"}
+local tabNames = {"MOVEMENT", "COMBAT", "VISUALS", "SETTINGS", "KEYBINDS"}
 local activeTab = "MOVEMENT"
 
 function addPage(name)
@@ -12643,10 +12486,11 @@ function setTab(name)
   end
 end
 
-for _, name in ipairs(tabNames) do
+for tabIndex, name in ipairs(tabNames) do
   addPage(name)
   local btn = Instance.new("TextButton")
   btn.Name = name
+  btn.LayoutOrder = tabIndex
   btn.Size = UDim2.new(0, 54, 0, 34)   -- ridotto per entrare
   btn.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
   btn.BackgroundTransparency = 0.72
@@ -22778,9 +22622,9 @@ end -- chiude __AmousDuelsSetupVisualsUI
 -- SETTINGS PAGE
 -- ============================================================
 Settings = pages.SETTINGS
-amousGuiScaleValue = tonumber(savedConfig.amousGuiScaleValue) or 0.75
+amousGuiScaleValue = tonumber(savedConfig.amousGuiScaleValue) or 0.60
 amousGuiScaleValue = math.clamp(tonumber(amousGuiScaleValue) or 0.50, 0.50, 1.50)
-amousProgressBarScaleValue = tonumber(savedConfig.amousProgressBarScaleValue) or 0.85
+amousProgressBarScaleValue = tonumber(savedConfig.amousProgressBarScaleValue) or 0.55
 amousMainScale = Main:FindFirstChild("AmousMainScale") or Instance.new("UIScale")
 amousMainScale.Name = "AmousMainScale"
 amousMainScale.Scale = amousGuiScaleValue
@@ -22816,9 +22660,21 @@ _G.AmousApplyProgressBarScale = applyAmousProgressBarScale
 
 _G.__AmousDuelsSetupSettingsUI = function()
   section(Settings, "GUI SETTINGS", 1)
-  -- La riga "Lock GUI" e' stata tolta: il lucchetto sta gia' in alto a
-  -- sinistra nella finestra, averlo anche qui era un doppione. La funzione
-  -- e il salvataggio restano identici, comanda solo quel bottone.
+
+  -- Lock GUI: un solo toggle blocca il trascinamento della hub, della barra
+  -- steal e dei bottoni mobile (tutti leggono _G.AmousGuiLocked).
+  do
+    local row, setVisual = _G.AmousActionToggleRow(Settings, "Lock GUI", _G.AmousGuiLocked == true, 8)
+    setLockGuiVisual = setVisual
+    local btn = row and row:FindFirstChild("ToggleButton")
+    if btn then
+      btn.Activated:Connect(function()
+        _G.AmousGuiLocked = not (_G.AmousGuiLocked == true)
+        if setVisual then setVisual(_G.AmousGuiLocked == true) end
+        saveAmousConfig()
+      end)
+    end
+  end
 
   do
     local row, setVisual = _G.AmousActionToggleRow(Settings, "Hide Mobile Buttons", _G.AmousHideMobileButtons == true, 9)
@@ -25203,7 +25059,7 @@ end
     saveAmousConfig()
   end, 0.50, 1.50)
 
-  stepperRow(Settings, "Progress Bar Size", amousProgressBarScaleValue, 5, function(v)
+  stepperRow(Settings, "Steal Bar Size", amousProgressBarScaleValue, 5, function(v)
     amousProgressBarScaleValue = v
     applyAmousProgressBarScale()
     saveAmousConfig()
@@ -25222,15 +25078,15 @@ end
     local row = baseRow(Settings, "Reset Mobile Buttons", 11)
     local mobResetBg = Instance.new("Frame")
     mobResetBg.Name = "ResetMobileButtonsBg"
-    mobResetBg.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
-    mobResetBg.BackgroundTransparency = 0
+    mobResetBg.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+    mobResetBg.BackgroundTransparency = 0.1
     mobResetBg.BorderSizePixel = 0
     mobResetBg.Size = UDim2.new(0, 78, 0, 24)
     mobResetBg.Position = UDim2.new(1, -88, 0.5, -12)
     mobResetBg.ZIndex = 7
     mobResetBg.Parent = row
     corner(mobResetBg, 12)
-    stroke(mobResetBg, Color3.fromRGB(249, 249, 249), 1.5, 0.15)
+    stroke(mobResetBg, COLORS.strokeSoft, 1, 0.5)
 
     local button = Instance.new("TextButton")
     button.Name = "ResetMobileButtons"
@@ -25247,16 +25103,6 @@ end
     button.Position = UDim2.new(0, 0, 0, 0)
     button.ZIndex = 8
     button.Parent = mobResetBg
-
-    local mobResetGrad = Instance.new("UIGradient")
-    mobResetGrad.Color = ColorSequence.new({
-      ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
-      ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
-      ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
-    })
-    mobResetGrad.Rotation = 18
-    mobResetGrad.Parent = mobResetBg
-    _G._AmousRegAccent(mobResetBg, mobResetGrad, "button")
 
     button.MouseEnter:Connect(function()
       tween(mobResetBg, {Size = UDim2.new(0, 82, 0, 26), Position = UDim2.new(1, -90, 0.5, -13)}, 0.12)
@@ -26041,8 +25887,8 @@ end
 
   local resetBg = Instance.new("Frame")
   resetBg.Name = "ResetBg"
-  resetBg.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
-  resetBg.BackgroundTransparency = 0
+  resetBg.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+  resetBg.BackgroundTransparency = 0.1
   resetBg.BorderSizePixel = 0
   resetBg.Size = UDim2.new(1, -16, 0, 42)
   resetBg.Position = UDim2.new(0, 8, 0, 1)
@@ -26066,34 +25912,21 @@ end
   resetBtn.ZIndex = 7
   resetBtn.Parent = resetBg
 
-  local resetGrad = Instance.new("UIGradient")
-  resetGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
-  })
-  resetGrad.Rotation = 18
-  resetGrad.Parent = resetBg
-
   local resetStroke = Instance.new("UIStroke")
   resetStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  resetStroke.Color = Color3.fromRGB(249, 249, 249)
-  resetStroke.Thickness = 1.5
-  resetStroke.Transparency = 0.15
+  resetStroke.Color = COLORS.strokeSoft
+  resetStroke.Thickness = 1
+  resetStroke.Transparency = 0.5
   resetStroke.Parent = resetBg
 
-  _G._AmousRegAccent(resetBg, resetGrad, "button")
   local function resetDefaultBg()
-    local b = _G._AmousToggleOnColor()
-    return b
+    return Color3.fromRGB(8, 8, 12)
   end
   local function resetEdgeCol()
-    local _, e = _G._AmousToggleOnColor()
-    return e
+    return COLORS.strokeSoft
   end
   local function resetHoverBg()
-    local b = _G._AmousToggleOnColor()
-    return b:Lerp(Color3.fromRGB(255, 255, 255), 0.16)
+    return Color3.fromRGB(24, 24, 30)
   end
   local resetConfirmBg = Color3.fromRGB(35, 35, 38)
   local resetDoneBg = Color3.fromRGB(28, 40, 30)
@@ -26107,15 +25940,13 @@ end
     confirmState = false
     resetBtn.Text = "RESET ALL SETTINGS"
     resetBtn.TextColor3 = resetDefaultText
-    resetGrad.Enabled = true
     tween(resetBg, {BackgroundColor3 = resetDefaultBg()}, 0.18)
-    tween(resetStroke, {Color = resetEdgeCol(), Transparency = 0.15, Thickness = 1.5}, 0.18)
+    tween(resetStroke, {Color = resetEdgeCol(), Transparency = 0.5, Thickness = 1}, 0.18)
   end
 
   function setResetConfirmTheme()
     resetBtn.Text = "CLICK AGAIN TO CONFIRM"
     resetBtn.TextColor3 = resetConfirmText
-    resetGrad.Enabled = false
     tween(resetBg, {BackgroundColor3 = resetConfirmBg}, 0.18)
     tween(resetStroke, {Color = resetConfirmText, Transparency = 0.02, Thickness = 1.4}, 0.18)
   end
@@ -26123,7 +25954,6 @@ end
   function setResetDoneTheme()
     resetBtn.Text = "DONE - REJOINING..."
     resetBtn.TextColor3 = resetDoneText
-    resetGrad.Enabled = false
     tween(resetBg, {BackgroundColor3 = resetDoneBg}, 0.18)
     tween(resetStroke, {Color = resetDoneText, Transparency = 0.02, Thickness = 1.4}, 0.18)
   end
@@ -26180,8 +26010,8 @@ end
       end
     end)
     pcall(function()
-      amousGuiScaleValue = 0.75
-      amousProgressBarScaleValue = 0.90
+      amousGuiScaleValue = 0.60
+      amousProgressBarScaleValue = 0.55
       NS = 59.5; CS = 28.8; LAGGER_SPEED = 29; LAGGER_CARRY_SPEED = 15
       currentSpeedMode = "Normal"
       autoCarrySpeedEnabled = false
@@ -26352,10 +26182,6 @@ end
       -- >>> BRAINROT X-RAY <<<
       if _G.AmousSetBrainrotXRay then pcall(_G.AmousSetBrainrotXRay, false) end
       if _SV.setBrainrotXRayVisual then pcall(_SV.setBrainrotXRayVisual, false) end
-      -- La hub potrebbe essere sbiadita dall'idle proprio mentre resetti:
-      -- si riporta a piena visibilita', altrimenti resti a guardare i
-      -- toggle appena resettati attraverso la trasparenza.
-      if _G.AmousIdleWake then pcall(_G.AmousIdleWake) end
       if _SV.setMotionBlurVisual then _SV.setMotionBlurVisual(false) end
       if _SV.setHighPingWarningVisual then _SV.setHighPingWarningVisual(false) end
       if _SV.setKickWarningVisual then _SV.setKickWarningVisual(false) end
