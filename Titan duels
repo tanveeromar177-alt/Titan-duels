@@ -4519,7 +4519,7 @@ local customBgSelected = nil   -- stringa ID custom selezionato, o nil se si usa
 -- Dove sta la barra delle tab (MOVEMENT / COMBAT / ...) dentro la finestra.
 -- Sta su _G e non su un local del main chunk per non consumare uno dei 200
 -- slot di registro. Valori ammessi: "Up", "Bottom", "Left", "Right".
-_G._AmousTabPosition = _G._AmousTabPosition or "Up"
+_G._AmousTabPosition = "Left"
 function _G.AmousValidTabPosition(v)
   if v == "Up" or v == "Bottom" or v == "Left" or v == "Right" then return v end
   return "Up"
@@ -4540,7 +4540,7 @@ canSaveConfig = (type(_amous_readfile) == "function" and type(_amous_writefile) 
 
 -- Intro
 selectedIntroMusic = selectedIntroMusic or 1
-_introEnabled = (_introEnabled ~= false)
+_introEnabled = false
 setIntroVisual = nil
 setIntroSongVisual = nil
 INTRO_MUSIC_OPTIONS = INTRO_MUSIC_OPTIONS or {
@@ -5760,7 +5760,7 @@ function loadAmousConfig()
   fovEnabled = data.fovEnabled == true
   fovValue = tonumber(data.fovValue) or fovValue
   noCamCollisionEnabled = data.noCamCollisionEnabled == true
-  motionBlurEnabled = data.motionBlurEnabled == true
+  motionBlurEnabled = false
   _G.AmousNoPlayerCollisionEnabled = data.noPlayerCollisionEnabled == true
   unwalkEnabled = data.unwalkEnabled == true
   skyTheme = (type(data.skyTheme) == "string" and data.skyTheme) or skyTheme
@@ -5804,15 +5804,15 @@ function loadAmousConfig()
   -- file, l'avvio avviene subito dopo la sua definizione.
   _G.AmousRainbowJoystickEnabled  = data.rainbowJoystickEnabled == true
   -- <<< RAINBOW MOBILE JOYSTICK END
-  _G.AmousRainbowToolsEnabled     = data.rainbowToolsEnabled == true
-  _G.AmousTransparentToolsEnabled = data.transparentToolsEnabled == true
-  _G.AmousCustomToolsEnabled      = data.customToolsEnabled == true
+  _G.AmousRainbowToolsEnabled     = false
+  _G.AmousTransparentToolsEnabled = false
+  _G.AmousCustomToolsEnabled      = false
   _G.AmousCustomToolSkins = _G.AmousCustomToolSkins or {}
   _G.AmousCustomToolSkins.Bat    = data.customToolSkinBat or "DiamondSword"
   _G.AmousCustomToolSkins.Medusa = data.customToolSkinMedusa or "GoldenDesertEagle" 
-  _G.AmousCustomSoundsEnabled     = data.customSoundsEnabled == true
+  _G.AmousCustomSoundsEnabled     = false
 
-  if type(data.avatarChanger) == "table" then
+  if false then
     -- _G._AmousAvatarChanger non esiste ancora (viene creato dopo),
     -- salviamo i dati in pending e li applichiamo all'inizializzazione del blocco
     _G._AmousAvatarChangerPending = data.avatarChanger
@@ -5829,7 +5829,7 @@ function loadAmousConfig()
     end
   end
   -- <<< CUSTOM ANIM PACK END
-  if data.introEnabled ~= nil then _introEnabled = data.introEnabled == true end
+  _introEnabled = false
   if data.selectedIntroMusic and INTRO_MUSIC_OPTIONS[data.selectedIntroMusic] then selectedIntroMusic = data.selectedIntroMusic end
   if data.musicSelectedSong and MUSIC_PLAYER_OPTIONS and MUSIC_PLAYER_OPTIONS[data.musicSelectedSong] then selectedMusicSong = data.musicSelectedSong end
   if data.musicVolume ~= nil then musicPlayerVolume = math.clamp(tonumber(data.musicVolume) or 1, 0, 2) end
@@ -12108,9 +12108,7 @@ AmousTitleImage.ZIndex = 5
 AmousTitleImage.Parent = Main
 
 -- >>> TITLE STYLE BEGIN
-_G.AmousTitleStyle = math.clamp(
-  math.floor(tonumber(_G.AmousTitleStyle or (savedConfig and savedConfig.titleStyle)) or 1),
-  1, #_G.AmousTitleStyles)
+_G.AmousTitleStyle = 1
 
 _G.AmousApplyTitleStyle = function(idx)
   idx = math.clamp(math.floor(tonumber(idx) or 1), 1, #_G.AmousTitleStyles)
@@ -12557,10 +12555,8 @@ end)
 -- <<< IDLE FADE END
 
 local BackgroundIDs = {
-  "77599245856089",
-  "128085595627413",
-  "120663379122080",
-  "71944223395764",
+  "105768583494591",
+  "117811266463116",
 }
 do
   local _saved = tonumber(savedConfig.currentBackground)
@@ -12584,10 +12580,14 @@ do
     _G.AmousFontChoice = savedConfig.customFont
   end
   if type(savedConfig.tabPosition) == "string" then
-    _G._AmousTabPosition = _G.AmousValidTabPosition(savedConfig.tabPosition)
+    _G._AmousTabPosition = "Left"
   end
   -- <<< TAB POSITION END
 end
+
+-- custom backgrounds removed: ignore anything saved by older configs
+customBgIds = {}
+customBgSelected = nil
 
 local BgImage = Instance.new("ImageLabel")
 BgImage.Name = "CustomBackground"
@@ -21596,6 +21596,7 @@ function __AmousDuelsSetupVisualsUI()
   section(Utility, "AVATAR", 11)
 
   -- ===== AVATAR CHANGER =====
+  if false then -- [removed UI: Avatar Changer]
   do
     -- ---- Stato persistente ----
     _G._AmousAvatarChanger = {
@@ -22550,6 +22551,7 @@ function __AmousDuelsSetupVisualsUI()
       _acSaveConfig()
     end
   end -- fine Avatar Changer
+  end -- [removed UI: Avatar Changer]
 
   do
     local rowH, setVisualH = toggleRow(Utility, "Enable Headless", headlessEnabled, 12)
@@ -22577,6 +22579,7 @@ function __AmousDuelsSetupVisualsUI()
   end
 
   -- ===== TOOLS (RAINBOW, TRANSPARENT, CUSTOM) =====
+  if false then -- [removed UI: Tools]
   section(Utility, "TOOLS", 12)
 
   -- >>> CUSTOM TOOLS + SELETTORE SKIN BEGIN
@@ -23137,6 +23140,7 @@ function __AmousDuelsSetupVisualsUI()
       end)
     end
   end
+  end -- [removed UI: Tools]
 
 -- ===== CAMERA (STRETCH REZ, FOV, FOV VALUE, NO CAM COLLISION) =====
 section(Utility, "CAMERA", 13)
@@ -23302,6 +23306,7 @@ end
 -- <<< STRETCH REZ: toggle + tendina END
 
 -- ===== MOTION BLUR =====
+  if false then -- [removed UI: Motion Blur]
 do
     local function _startMotionBlur()
         if _motionBlurConn then pcall(function() _motionBlurConn:Disconnect() end); _motionBlurConn = nil end
@@ -23374,6 +23379,7 @@ do
         _startMotionBlur()
     end
 end
+  end -- [removed UI: Motion Blur]
 
 -- ORDINE CAMERA: Stretch Rez (14) -> FOV (14) -> Motion Blur (15) -> No Cam Collision (16)
 do
@@ -23878,12 +23884,11 @@ _G.__AmousDuelsSetupSettingsUI = function()
   -- Posiziona le 4 immagini in modo che riempiano la riga
 makeImageButton(1, 16)
 makeImageButton(2, 84)  -- +68 rispetto al primo
-makeImageButton(3, 152) -- +68
-makeImageButton(4, 220) -- +68
 
   updateBackgroundButtons()
 
   -- ===== CUSTOM BACKGROUND ROW (stile Tracker Color) =====
+  if false then -- [removed UI: Custom Background]
   do
     local customBgRow = baseRow(Settings, "Custom Background", 2)
     customBgRow.Size = UDim2.new(1, -4, 0, 42)
@@ -24526,6 +24531,7 @@ makeImageButton(4, 220) -- +68
 
     _G.AmousCustomBgPreviewUpdate()
   end
+  end -- [removed UI: Custom Background]
   -- ===== FINE CUSTOM BACKGROUND ROW =====
 
 -- ============================================================
@@ -25012,6 +25018,7 @@ end
 
   -- ===== TAB POSITION ROW =====
   -- >>> TAB POSITION BEGIN
+  if false then -- [removed UI: Tab Position]
   ;(function()
     local TP_ORDER = { "Up", "Bottom", "Left", "Right" }
 
@@ -25393,6 +25400,7 @@ end
       }):Play()
     end)
   end)()
+  end -- [removed UI: Tab Position]
   -- <<< TAB POSITION END
   -- ===== FINE TAB POSITION ROW =====
 
@@ -25747,6 +25755,7 @@ end
   -- Stesso LayoutOrder della Tab Position e creata subito dopo: a parita'
   -- di LayoutOrder il UIListLayout rispetta l'ordine di inserimento, quindi
   -- finisce esattamente sotto.
+  if false then -- [removed UI: Title Style]
   ;(function()
     local N = #_G.AmousTitleStyles
 
@@ -25842,6 +25851,7 @@ end
 
     refreshTitleStyleSelector()
   end)()
+  end -- [removed UI: Title Style]
   -- <<< TITLE STYLE END
   -- ===== FINE TITLE STYLE ROW =====
 
@@ -26021,6 +26031,7 @@ end
     end)
   end
 
+  if false then -- [removed UI: Intro]
   section(Settings, "INTRO", 50)
   do
     local row, setVisual = toggleRow(Settings, "Intro", _introEnabled, 51)
@@ -26123,8 +26134,10 @@ end
       saveAmousConfig()
     end)
   end
+  end -- [removed UI: Intro]
 
   -- ===== MUSIC PLAYER =====
+  if false then -- [removed UI: Music Player]
   section(Settings, "MUSIC PLAYER", 53)
   do
     local mpRow = baseRow(Settings, "Music Player", 54)
@@ -26768,6 +26781,7 @@ end
       }):Play()
     end)
   end
+  end -- [removed UI: Music Player]
 
   section(Settings, "SETTINGS", 999)
   local resetHolder = Instance.new("Frame")
@@ -26988,14 +27002,14 @@ end
       -- >>> CUSTOM FONTS <<< si torna ai font originali di ogni elemento
       if _G.AmousFonts then pcall(_G.AmousFonts.set, "Default", true) end
       if _G.AmousFontPickerClose then pcall(_G.AmousFontPickerClose) end
-      _G._AmousTabPosition = "Up"
+      _G._AmousTabPosition = "Left"
       if _G.AmousTabPosClose then pcall(_G.AmousTabPosClose) end
-      if _G.AmousApplyTabPosition then pcall(_G.AmousApplyTabPosition, "Up") end
+      if _G.AmousApplyTabPosition then pcall(_G.AmousApplyTabPosition, "Left") end
       -- >>> TITLE STYLE <<< torna allo stile 1, anche visivamente
       if _G.AmousApplyTitleStyle then pcall(_G.AmousApplyTitleStyle, 1) end
       if _G.AmousRefreshTitleStyleSelector then pcall(_G.AmousRefreshTitleStyleSelector) end
       -- <<< TAB POSITION END
-      selectedIntroMusic = 1; _introEnabled = true
+      selectedIntroMusic = 1; _introEnabled = false
       headlessEnabled = false; korbloxEnabled = false
       if setIntroVisual then setIntroVisual(_introEnabled) end
       if setIntroSongVisual then setIntroSongVisual() end
