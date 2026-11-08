@@ -5,7 +5,7 @@
 -- nulla da ripulire perche' non parte nulla. Il flag vive in _G, quindi
 -- si azzera da solo rientrando in partita.
 -- ============================================================
-if _G.AmousRunning then return end
+if _G.AmousRunning then warn("[Amous] already running in this session - rejoin the game, then execute again") return end
 _G.AmousRunning = true
 
 repeat task.wait() until game:IsLoaded()
