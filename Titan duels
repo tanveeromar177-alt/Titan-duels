@@ -886,189 +886,7 @@ end
     end)
   end
 
-  -- ================================================================
-  -- FLOAT
-  -- Era la V5 dell'Anti TP Bat, ora e' una funzione a se': non ha una riga
-  -- nella GUI, si usa da keybind o dal bottone mobile.
-  -- Non c'entra niente col resto dell'Anti TP Bat, che lavora sul
-  -- PhysicsRepRootPart mandando la posizione replicata su una part esca e
-  -- congelando il personaggio. Il Float non tocca la replica: sale di forza
-  -- di RISE studs rispetto a dove sei, e resta a quella quota lasciando X e
-  -- Z libere. Vive qui dentro solo perche' riusa getHRP() di questo blocco.
-  -- La quota non e' un numero fisso ma viene calcolata a ogni partenza
-  -- dalla tua Y del momento, cosi' funziona uguale a terra, su una base
-  -- o su una piattaforma in alto.
-  --
-  -- La salita NON passa dalla fisica. Dare velocita' verticale non basta:
-  -- la gravita' la mangia e da fermo a terra lo stato Running dell'Humanoid
-  -- annulla la spinta contro il pavimento. Qui si alza direttamente la Y di
-  -- RATE * dt a ogni frame, quindi la salita e' esattamente quella voluta.
-  --
-  -- Ogni frame si riscrive SOLO la Y di posizione e velocita': X/Z vengono
-  -- ricopiate identiche, altrimenti il personaggio perderebbe la spinta e
-  -- si incollerebbe a ogni passo. La rotazione va conservata a mano, se no
-  -- si gira verso Z+ sessanta volte al secondo.
-  --
-  -- Tutto dentro un'unica tabella per non aggiungere local al chunk
-  -- principale, che e' al limite dei 200 registri di Luau.
-  local FLOAT = {
-    RISE    = 17,     -- di quanto salire rispetto alla Y di partenza
-    RATE    = 55,     -- forza di salita, studs al secondo
-    CYCLE   = 2.5,    -- quanto si resta su prima di scendere
-    PAUSE   = 0.5,    -- pausa a terra prima di risalire
-    conn    = nil,
-    thread  = nil,
-    running = false,
-    locked  = false,  -- true da quando la quota e' stata raggiunta
-    targetY = nil,    -- quota di questo giro, calcolata alla partenza
-  }
-
-  function FLOAT.startLoop()
-    if FLOAT.conn then return end
-    -- Il blocco scatta solo DOPO che la quota e' stata raggiunta salendo.
-    -- Prima si teneva la Y fissa gia' dal primo frame: partendo da un punto
-    -- piu' alto della quota ti strappava giu' di colpo invece di lasciarti
-    -- arrivare. Ogni ciclo riparte da capo, quindi si riazzera qui.
-    FLOAT.locked = false
-    -- La quota si ricalcola a ogni giro. Non si legge qui ma al primo
-    -- frame utile: se in questo istante si sta respawnando l'HRP non
-    -- esiste e si prenderebbe una Y sbagliata.
-    FLOAT.targetY = nil
-    -- Staccare l'Humanoid da terra prima di partire, se no il primo frame
-    -- di spinta viene assorbito dal pavimento.
-    local _, hum0 = getHRP()
-    if hum0 then
-      pcall(function() hum0:ChangeState(Enum.HumanoidStateType.Freefall) end)
-    end
-    FLOAT.conn = RunService.Heartbeat:Connect(function(dt)
-      local root = getHRP()
-      if not root then return end            -- morto o in respawn
-      local pos = root.Position
-      local vel = root.Velocity
-      local rot = root.CFrame - root.CFrame.Position
-      -- Primo frame del giro: la quota di arrivo e' RISE studs sopra
-      -- quella attuale.
-      if not FLOAT.targetY then
-        FLOAT.targetY = pos.Y + FLOAT.RISE
-      end
-
-      if not FLOAT.locked then
-        -- math.min per non sfondare la quota se capita un frame lungo
-        local nextY = math.min(pos.Y + FLOAT.RATE * dt, FLOAT.targetY)
-        root.CFrame   = CFrame.new(pos.X, nextY, pos.Z) * rot
-        root.Velocity = Vector3.new(vel.X, 0, vel.Z)
-        -- quota raggiunta: da qui in poi si tiene
-        if nextY >= FLOAT.targetY then FLOAT.locked = true end
-        return
-      end
-
-      root.CFrame   = CFrame.new(pos.X, FLOAT.targetY, pos.Z) * rot
-      root.Velocity = Vector3.new(vel.X, 0, vel.Z)
-    end)
-  end
-
-  function FLOAT.stopLoop(tpDown)
-    if FLOAT.conn then
-      pcall(function() FLOAT.conn:Disconnect() end)
-      FLOAT.conn = nil
-    end
-    -- Spegnendo si torna a terra col TP Down, sempre quello NORMALE anche
-    -- se nelle impostazioni e' selezionato Slow Fall: da quota bloccata il
-    -- rientro deve essere immediato, una discesa lenta lascerebbe il
-    -- personaggio scoperto per tutto il tragitto.
-    if tpDown and _G.AmousRunTPDown then
-      pcall(_G.AmousRunTPDown, true)
-    end
-  end
-
-  -- Aspetta che il personaggio abbia davvero toccato terra dopo il TP Down.
-  -- Non basta un'attesa fissa: il TP Down sposta l'HRP ma l'Humanoid ci
-  -- mette qualche frame a registrare il pavimento, e se si ripartisse
-  -- subito si risalirebbe da meta' strada senza mai arrivare a terra.
-  function FLOAT.waitGrounded(timeout)
-    local deadline = os.clock() + (timeout or 3)
-    while os.clock() < deadline do
-      if not FLOAT.running then return end
-      local hrp, hum = getHRP()
-      if not hrp or not hum then return end
-      if hum.Health <= 0 then return end
-      if hum.FloorMaterial ~= Enum.Material.Air then
-        task.wait(FLOAT.PAUSE)   -- pausa a terra, poi si risale
-        return
-      end
-      RunService.Heartbeat:Wait()
-    end
-  end
-
-  function FLOAT.enable()
-    if FLOAT.running then return end
-    FLOAT.running = true
-    FLOAT.startLoop()
-    -- Ciclo automatico: restare fermi alla stessa quota troppo a lungo e'
-    -- proprio la condizione che fa scattare il controllo del gioco, quindi
-    -- ogni CYCLE secondi si scende e si risale.
-    FLOAT.thread = task.spawn(function()
-      while FLOAT.running do
-        local t0 = os.clock()
-        while FLOAT.running and (os.clock() - t0) < FLOAT.CYCLE do
-          task.wait(0.1)
-        end
-        if not FLOAT.running then break end
-        FLOAT.stopLoop(true)
-        -- si risale solo DOPO essere arrivati a terra, non dopo un tempo
-        -- deciso a tavolino
-        FLOAT.waitGrounded(3)
-        if not FLOAT.running then break end
-        FLOAT.startLoop()
-      end
-    end)
-  end
-
-  function FLOAT.disable()
-    if not FLOAT.running then return end
-    FLOAT.running = false
-    if FLOAT.thread then
-      pcall(task.cancel, FLOAT.thread)
-      FLOAT.thread = nil
-    end
-    FLOAT.stopLoop(true)
-  end
-
-  -- ---- API pubblica del Float ----
-  -- _G.AmousFloatOn e' la fonte di verita' per bottone mobile e visuali.
-  _G.AmousFloatOn = false
-
-  local function floatSync()
-    _G.AmousFloatOn = FLOAT.running == true
-    if _G.AmousRefreshMobileButtonStates then
-      pcall(_G.AmousRefreshMobileButtonStates)
-    end
-  end
-
-  function _G.AmousFloatStart()
-    if FLOAT.running then return end
-    -- Anti Die prima di muoversi, come per gli altri moduli.
-    if _G.AmousAntiDieArmNow then pcall(_G.AmousAntiDieArmNow) end
-    FLOAT.enable()
-    floatSync()
-  end
-
-  function _G.AmousFloatStop()
-    if not FLOAT.running then return end
-    FLOAT.disable()
-    floatSync()
-  end
-
-  function _G.AmousFloatToggle()
-    if FLOAT.running then _G.AmousFloatStop() else _G.AmousFloatStart() end
-  end
-
-  _G.AmousFloat = {
-    start     = function() _G.AmousFloatStart() end,
-    stop      = function() _G.AmousFloatStop() end,
-    toggle    = function() _G.AmousFloatToggle() end,
-    isEnabled = function() return FLOAT.running == true end,
-  }
+  -- (Float rimosso su richiesta)
 
   local function lockMovement()
     local hrp, hum = getHRP()
@@ -2504,7 +2322,6 @@ local DEFAULT_SPEED_KEYBINDS = {
   AutoPlay = Enum.KeyCode.Z,
   InstantReset = Enum.KeyCode.G,
   AntiTPBat = Enum.KeyCode.T,
-  Float = Enum.KeyCode.B,
 
   ToggleUI = Enum.KeyCode.LeftControl,
 }
@@ -2519,7 +2336,6 @@ local speedKeybinds = {
   AutoPlay = DEFAULT_SPEED_KEYBINDS.AutoPlay,
   InstantReset = DEFAULT_SPEED_KEYBINDS.InstantReset,
   AntiTPBat = DEFAULT_SPEED_KEYBINDS.AntiTPBat,
-  Float = DEFAULT_SPEED_KEYBINDS.Float,
   ToggleUI = DEFAULT_SPEED_KEYBINDS.ToggleUI,
 }
 
@@ -3856,7 +3672,6 @@ do
     if _G.AmousNormalAimbotOn == true then return true end   -- Bat Aimbot V1
     if _G.AmousBatAimbotV2On == true then return true end    -- Bat Aimbot V2
     if _G.AmousAntiTPBatEnabled == true then return true end -- Anti TP Bat
-    if _G.AmousFloatOn == true then return true end          -- Float
     return false
   end
 
@@ -5723,15 +5538,15 @@ function loadAmousConfig()
   -- _G._AmousSetTPBatCameraLock non esiste ancora qui. Usiamo un pending value
   -- (stesso pattern di _AmousSemiStealPending) che il do-block consuma all'avvio.
   if _G._AmousSetTPBatCameraLock then
-    _G._AmousSetTPBatCameraLock(data.tpBatCameraLockEnabled == true)
+    _G._AmousSetTPBatCameraLock(false)
   else
-    _G._AmousTPBatCameraLockPending = data.tpBatCameraLockEnabled == true
+    _G._AmousTPBatCameraLockPending = false
   end
   _G.AmousTPBatOn = data.tpBatEnabled == true
   -- >>> TP BAT VERSIONS <<<
-  _G.AmousTPBatVersion = math.clamp(tonumber(data.tpBatVersion) or 1, 1, 5)
+  _G.AmousTPBatVersion = 1   -- TP Bat Versions rimosso: sempre V1
   batCounterEnabled = data.batCounterEnabled == true
-  if data.batCounterMode == "V2" then batCounterMode = "V2" else batCounterMode = "V1" end
+  batCounterMode = "V1"   -- Bat Counter fisso V1
   medCounterEnabled = data.medCounterEnabled == true
 
   _G.AmousAntiBatEnabled          = false   -- Anti Bat rimosso: sempre OFF
@@ -5750,7 +5565,7 @@ function loadAmousConfig()
   if data.vividDofFocus then _G._AmousVivid.dofFocus = math.clamp(tonumber(data.vividDofFocus) or 25, 1, 100) end
   if data.vividSunIntensity then _G._AmousVivid.sunIntensity = math.clamp(tonumber(data.vividSunIntensity) or 0.2, 0, 1) end
   xrayEnabled = data.xrayEnabled == true
-  _G.AmousBrainrotXRayEnabled = data.brainrotXRayEnabled == true   -- >>> BRAINROT X-RAY <<<
+  _G.AmousBrainrotXRayEnabled = false   -- Brainrot X-Ray rimosso: sempre OFF
   highPingWarningEnabled = false
   _G._AmousKickWarn.enabled = data.kickWarningEnabled == true
   _G.AmousUAKEnabled = data.ultimateAntiKick == true
@@ -5795,7 +5610,7 @@ function loadAmousConfig()
   _G.AmousAntiTPBatEnabled        = false   -- Anti TP Bat rimosso: sempre OFF
   _G.AmousAntiTPBatSpam           = false
   _G.AmousAntiTPBatVersion        = math.clamp(tonumber(data.antiTPBatVersion) or 1, 1, 4)
-  _G.AmousAntiVoidEnabled         = data.antiVoidEnabled == true   -- >>> ANTI VOID <<<
+  _G.AmousAntiVoidEnabled         = false   -- Anti Void rimosso: sempre OFF
   -- >>> RAINBOW MOBILE JOYSTICK BEGIN
   -- Qui si legge soltanto: il modulo non esiste ancora a questo punto del
   -- file, l'avvio avviene subito dopo la sua definizione.
@@ -7721,7 +7536,7 @@ do
   local TP_BAT_SWING_COOLDOWN = 0.08
   local tpBatPlayerConns = {}
   -- Consuma il pending value lasciato da loadAmousConfig (che gira prima di questo do-block)
-  local tpBatCameraLockEnabled = _G._AmousTPBatCameraLockPending == true
+  local tpBatCameraLockEnabled = false   -- Camera Lock rimosso
   _G._AmousTPBatCameraLockPending = nil
   -- Bridge su _G per l'accesso esterno al do-block (save/load/UI/reset)
   _G._AmousGetTPBatCameraLock = function() return tpBatCameraLockEnabled end
@@ -16599,170 +16414,8 @@ end)
 
 section(Combat, "TP BAT", 10)
 
--- >>> TP BAT VERSIONS UI BEGIN
--- Riga SENZA toggle (sopra Auto Swing): solo la freccetta.
--- Aprendola compare lo slider a 5 segmenti V1 / V2 / V3 / V4 / V5.
--- V1 = logica storica. Bat Aimbot V2 e Bat Counter V2 usano SEMPRE la V1,
--- qualunque sia la versione selezionata qui.
-;(function()
-  _G.AmousTPBatVersion = math.clamp(tonumber(_G.AmousTPBatVersion) or 1, 1, 5)
-
-  local tpvExpanded = false
-
-  -- Etichetta STATICA: la riga resta sempre "TP Bat Versions".
-  local tpvRow = baseRow(Combat, "TP Bat Versions", 10)
-
-  -- ---- FRECCETTA (unico comando della riga) ----
-  local tpvArrow = Instance.new("TextButton")
-  tpvArrow.Name = "TPBatVersionsArrow"
-  tpvArrow.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
-  tpvArrow.BackgroundTransparency = 0.18
-  tpvArrow.BorderSizePixel = 0
-  tpvArrow.Size = UDim2.new(0, 28, 0, 24)
-  tpvArrow.Position = UDim2.new(1, -40, 0.5, -12)
-  tpvArrow.Text = "\u{25B2}"
-  tpvArrow.TextColor3 = COLORS.white
-  tpvArrow.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-  tpvArrow.TextStrokeTransparency = 0.3
-  tpvArrow.TextSize = 15
-  tpvArrow.Font = Enum.Font.GothamBold
-  tpvArrow.AutoButtonColor = false
-  tpvArrow.ZIndex = 8
-  tpvArrow.Parent = tpvRow
-  corner(tpvArrow, 7)
-  stroke(tpvArrow, COLORS.strokeSoft, 1, 0.45)
-
-  -- ---- HOLDER A TENDINA (2 + 42 + 2) ----
-  local TPV_HOLDER_H = 46
-  local tpvHolder = Instance.new("Frame")
-  tpvHolder.Name = "TP Bat Versions Options"
-  tpvHolder.BackgroundTransparency = 1
-  tpvHolder.Size = UDim2.new(1, 0, 0, TPV_HOLDER_H)
-  tpvHolder.BorderSizePixel = 0
-  tpvHolder.LayoutOrder = 10
-  tpvHolder.ZIndex = 4
-  tpvHolder.ClipsDescendants = true
-  tpvHolder.Visible = false
-  tpvHolder.Parent = Combat
-
-  -- ============ SLIDER V1 / V2 / V3 / V4 / V5 ============
-  local TPV_LABELS = {"V1", "V2", "V3", "V4", "V5"}
-  local TPV_N = #TPV_LABELS
-  local tpvSegW = 1 / TPV_N
-
-  local tpvVerHolder = Instance.new("Frame")
-  tpvVerHolder.Name = "TPBatVersionSelector"
-  tpvVerHolder.BackgroundColor3 = COLORS.row
-  tpvVerHolder.BackgroundTransparency = 0.28
-  tpvVerHolder.Size = UDim2.new(1, -4, 0, 42)
-  tpvVerHolder.Position = UDim2.new(0, 2, 0, 2)
-  tpvVerHolder.BorderSizePixel = 0
-  tpvVerHolder.ZIndex = 4
-  tpvVerHolder.ClipsDescendants = true
-  tpvVerHolder.Parent = tpvHolder
-  corner(tpvVerHolder, 14)
-  stroke(tpvVerHolder, Color3.fromRGB(148, 148, 148), 1.4, 0.32)
-  _G._AmousRegAccent(tpvVerHolder, nil, "soft")
-
-  local tpvSlide = Instance.new("Frame")
-  tpvSlide.Name = "TPBatVersionSlide"
-  tpvSlide.BackgroundColor3 = Color3.fromRGB(166, 166, 166)
-  tpvSlide.BackgroundTransparency = 0.1
-  tpvSlide.AnchorPoint = Vector2.new(0.5, 0.5)
-  tpvSlide.Size = UDim2.new(tpvSegW, -4, 1, -8)
-  tpvSlide.Position = UDim2.new(tpvSegW * 0.5, 0, 0.5, 0)
-  tpvSlide.BorderSizePixel = 0
-  tpvSlide.ZIndex = 5
-  tpvSlide.Parent = tpvVerHolder
-  corner(tpvSlide, 13)
-  local tpvSlideStroke = Instance.new("UIStroke")
-  tpvSlideStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-  tpvSlideStroke.Color = Color3.fromRGB(249, 249, 249)
-  tpvSlideStroke.Thickness = 1.5
-  tpvSlideStroke.Transparency = 0.1
-  tpvSlideStroke.Parent = tpvSlide
-  local tpvSlideGrad = Instance.new("UIGradient")
-  tpvSlideGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(232, 232, 232)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(166, 166, 166)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(123, 123, 123)),
-  })
-  tpvSlideGrad.Transparency = NumberSequence.new({
-    NumberSequenceKeypoint.new(0, 0.08),
-    NumberSequenceKeypoint.new(0.5, 0.02),
-    NumberSequenceKeypoint.new(1, 0.08),
-  })
-  tpvSlideGrad.Rotation = 22
-  tpvSlideGrad.Parent = tpvSlide
-  _G._AmousRegAccent(tpvSlide, tpvSlideGrad, "slide")
-
-  local tpvLabels = {}
-  for i, lblText in ipairs(TPV_LABELS) do
-    local lbl = Instance.new("TextLabel")
-    lbl.Name = "TPBatVersionLabel_" .. tostring(i)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = lblText
-    lbl.TextColor3 = COLORS.white
-    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    lbl.TextStrokeTransparency = 0.2
-    lbl.TextSize = 11
-    lbl.Font = Enum.Font.GothamBlack
-    lbl.TextXAlignment = Enum.TextXAlignment.Center
-    lbl.AnchorPoint = Vector2.new(0.5, 0.5)
-    lbl.Size = UDim2.new(tpvSegW, 0, 1, 0)
-    lbl.Position = UDim2.new(tpvSegW * (i - 0.5), 0, 0.5, 0)
-    lbl.ZIndex = 8
-    lbl.Parent = tpvVerHolder
-    tpvLabels[i] = lbl
-
-    local click = Instance.new("TextButton")
-    click.Name = "TPBatVersionClick_" .. tostring(i)
-    click.BackgroundTransparency = 1
-    click.Text = ""
-    click.AutoButtonColor = false
-    click.AnchorPoint = Vector2.new(0.5, 0.5)
-    click.Size = UDim2.new(tpvSegW, 0, 1, 0)
-    click.Position = UDim2.new(tpvSegW * (i - 0.5), 0, 0.5, 0)
-    click.ZIndex = 10
-    click.Parent = tpvVerHolder
-    local idx = i
-    click.MouseButton1Click:Connect(function()
-      if _G.AmousSetTPBatVersion then
-        _G.AmousSetTPBatVersion(idx)
-      else
-        _G.AmousTPBatVersion = idx
-        if _G._AmousTPBatSetVersionVisual then _G._AmousTPBatSetVersionVisual(idx) end
-      end
-    end)
-  end
-
-  local function setTPVersionVisual(index)
-    index = math.clamp(tonumber(index) or 1, 1, TPV_N)
-    _G._AmousTPBatVisIndex = index
-    tween(tpvSlide, {
-      Position = UDim2.new(tpvSegW * (index - 0.5), 0, 0.5, 0),
-      Size = UDim2.new(tpvSegW, -4, 1, -8),
-    }, 0.18)
-    for i, lbl in ipairs(tpvLabels) do
-      local sel = (i == index)
-      tween(lbl, {
-        TextTransparency = sel and 0 or 0.22,
-        TextStrokeTransparency = sel and 0.2 or 0.45,
-      }, 0.14)
-    end
-  end
-  _G._AmousTPBatSetVersionVisual = setTPVersionVisual
-
-  -- ---- APERTURA / CHIUSURA ----
-  tpvArrow.Activated:Connect(function()
-    tpvExpanded = not tpvExpanded
-    _G._AmousExpand(tpvHolder, tpvExpanded, TPV_HOLDER_H, tpvArrow)
-  end)
-
-  -- Init visuale
-  setTPVersionVisual(_G.AmousTPBatVersion or 1)
-end)()
--- <<< TP BAT VERSIONS UI END
+-- (TP Bat Versions rimosso: fisso V1)
+_G.AmousTPBatVersion = 1
 
 _G.AmousTPBatAutoSwingRow, _G.AmousTPBatAutoSwingSetVisual, _G.AmousTPBatAutoSwingBtn = _G.AmousActionToggleRow(Combat, "Auto Swing", tpBatAutoSwingEnabled, 11)
 do
@@ -16777,20 +16430,7 @@ do
     end)
   end
 end
-_G.AmousTPBatCameraLockRow, _G.AmousTPBatCameraLockSetVisual, _G.AmousTPBatCameraLockBtn = _G.AmousActionToggleRow(Combat, "Camera Lock", _G._AmousGetTPBatCameraLock and _G._AmousGetTPBatCameraLock() or false, 12)
-do
-  if _G.AmousTPBatCameraLockBtn then
-    _G.AmousTPBatCameraLockBtn.MouseButton1Click:Connect(function()
-      if _G.AmousTPBatCameraLockClickBusy then return end
-      _G.AmousTPBatCameraLockClickBusy = true
-      local _clv = not (_G._AmousGetTPBatCameraLock and _G._AmousGetTPBatCameraLock() or false)
-      if _G._AmousSetTPBatCameraLock then _G._AmousSetTPBatCameraLock(_clv) end
-      if _G.AmousTPBatCameraLockSetVisual then _G.AmousTPBatCameraLockSetVisual(_clv) end
-      saveAmousConfig()
-      task.delay(0.12, function() _G.AmousTPBatCameraLockClickBusy = false end)
-    end)
-  end
-end
+-- (Camera Lock rimosso: sempre OFF)
 _G.AmousTPBatSetVisual = function(_) end
 
 -- ===== BUILDER BAT COUNTER MODE SELECTOR (V1 / V2) =====
@@ -16961,21 +16601,7 @@ section(Combat, "COUNTERS", 12)
 
 -- (Anti TP Bat UI row rimossa su richiesta)
 
--- >>> ANTI VOID BEGIN
-do
-  local _avRow, setAntiVoidVisual = toggleRow(Combat, "Anti Void", _G.AmousAntiVoidEnabled == true, 14)
-  _SV.setAntiVoidVisual = setAntiVoidVisual
-  local _avBtn = _avRow and _avRow:FindFirstChild("ToggleButton")
-  if _avBtn then
-    _avBtn.Activated:Connect(function()
-      local on = not (_G.AmousAntiVoidEnabled == true)
-      if _G.AmousAntiVoid then _G.AmousAntiVoid.setEnabled(on) end
-      if setAntiVoidVisual then setAntiVoidVisual(on) end
-      saveAmousConfig()
-    end)
-  end
-end
--- <<< ANTI VOID END
+-- (Anti Void UI row rimossa su richiesta)
 _, setBatCounterVisual = toggleRow(Combat, "Bat Counter", batCounterEnabled, 12)
 do
   _amousBtn = Combat:FindFirstChild("Bat Counter") and Combat:FindFirstChild("Bat Counter"):FindFirstChild("ToggleButton")
@@ -16990,10 +16616,6 @@ do
       end
       saveAmousConfig()
     end)
-  end
-  local batRow = Combat:FindFirstChild("Bat Counter")
-  if batRow then
-    _G._AmousBuildBatCounterModeSelector(batRow, Combat)
   end
 end
 
@@ -17031,9 +16653,6 @@ aimbotKeybindRow = speedKeybindRow(Keybinds, "Bat Aimbot V1", "Aimbot", 7)
 combatAimbotKeybindLabel = aimbotKeybindRow and aimbotKeybindRow:FindFirstChild("Label")
 refreshAimbotModeLabels()
 speedKeybindRow(Keybinds, "TP Bat", "TPBat", 8)
--- Stesso LayoutOrder e creata subito dopo: a parita' di ordine il
--- UIListLayout rispetta l'inserimento, quindi finisce sotto Anti TP Bat.
-speedKeybindRow(Keybinds, "Float", "Float", 9)
 speedKeybindRow(Keybinds, "Auto Play", "AutoPlay", 10)
 speedKeybindRow(Keybinds, "Instant Reset", "InstantReset", 12)
 
@@ -20259,20 +19878,6 @@ function __AmousDuelsSetupVisualsUI()
       end)
     end
   end
-  -- >>> BRAINROT X-RAY <<< riga subito sotto X-Ray
-  do
-    local rowBX, setVisualBX = toggleRow(Utility, "Brainrot X-Ray", _G.AmousBrainrotXRayEnabled == true, 10)
-    _SV.setBrainrotXRayVisual = setVisualBX
-    local _bxBtn = rowBX and rowBX:FindFirstChild("ToggleButton")
-    if _bxBtn then
-      _bxBtn.Activated:Connect(function()
-        local on = not (_G.AmousBrainrotXRayEnabled == true)
-        if _G.AmousSetBrainrotXRay then _G.AmousSetBrainrotXRay(on) end
-        if setVisualBX then setVisualBX(on) end
-        saveAmousConfig()
-      end)
-    end
-  end
   do
     -- LayoutOrder 8 come Vivid Graphics e la sua riga Changer, ma creata
     -- dopo: a parita' di ordine il UIListLayout rispetta l'inserimento,
@@ -23239,7 +22844,6 @@ _G.__AmousDuelsSetupSettingsUI = function()
       -- La versione accanto al nome e' sincronizzata col bottone mobile:
       -- "dyn" dice che l'etichetta va ricalcolata invece che fissa.
       { key = "aimbot",       label = "Bat Aimbot", dyn = "aimbot" },
-      { key = "float",        label = "Float" },
       { key = "instantReset", label = "Instant Reset" },
       { key = "tp",           label = "TP Down" },
       { key = "carry",        label = "Carry Speed" },
@@ -27018,10 +26622,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if _G.AmousAutoPlayToggle then _G.AmousAutoPlayToggle() end
     return
   end
-  if isKeyMatch(speedKeybinds.Float) then
-    if _G.AmousFloatToggle then _G.AmousFloatToggle() end
-    return
-  end
   if isKeyMatch(speedKeybinds.InstantReset) then
     if _G.AmousInstantReset then _G.AmousInstantReset() end
     return
@@ -27050,8 +26650,8 @@ _G.__AmousDuelsSetupStealBar = function()
   -- Sfondo = stesso background scelto nell'hub (built-in o custom),
   -- in semi trasparenza.
   -- ============================================================
-  local W, H = 380, 44
-  local RADIUS = 11
+  local W, H = 330, 94
+  local RADIUS = 22
 
   local C = {
     line   = Color3.fromRGB(178, 178, 178),
@@ -27120,8 +26720,8 @@ _G.__AmousDuelsSetupStealBar = function()
   _G.AmousStealBarDefaultPosition = UDim2.new(0.5, -math.floor(W / 2), 1, -128)
   pbFrame.Position = tableToUDim2(savedStealBarPositionTable, _G.AmousStealBarDefaultPosition)
   savedStealBarPositionTable = udim2ToTable(pbFrame.Position)
-  pbFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-  pbFrame.BackgroundTransparency = 0.35
+  pbFrame.BackgroundColor3 = Color3.fromRGB(14, 12, 22)
+  pbFrame.BackgroundTransparency = 0.04
   pbFrame.BorderSizePixel = 0
   pbFrame.Active = true
   pbFrame.ClipsDescendants = true
@@ -27129,9 +26729,9 @@ _G.__AmousDuelsSetupStealBar = function()
   Instance.new("UICorner", pbFrame).CornerRadius = UDim.new(0, RADIUS)
 
   local cardStroke = Instance.new("UIStroke", pbFrame)
-  cardStroke.Color = C.line
+  cardStroke.Color = Color3.fromRGB(70, 66, 88)
   cardStroke.Thickness = 1.2
-  cardStroke.Transparency = 0.4
+  cardStroke.Transparency = 0.5
 
   drag(pbFrame)
 
@@ -27173,288 +26773,126 @@ _G.__AmousDuelsSetupStealBar = function()
     end
   end)
 
-  -- ===================== SFONDO = QUELLO DELL'HUB =====================
-  local bgImage = Instance.new("ImageLabel", pbFrame)
-  bgImage.Name = "BarBackground"
-  bgImage.Size = UDim2.new(1, 0, 1, 0)
-  bgImage.Position = UDim2.new(0, 0, 0, 0)
-  bgImage.BackgroundTransparency = 1
-  bgImage.ImageTransparency = 0.45
-  bgImage.ScaleType = Enum.ScaleType.Crop
-  bgImage.Visible = false
-  bgImage.ZIndex = 1
-  Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, RADIUS)
-
-  -- Velo scuro sopra l'immagine, per tenere il testo leggibile
-  local scrim = Instance.new("Frame", pbFrame)
-  scrim.Name = "Scrim"
-  scrim.Size = UDim2.new(1, 0, 1, 0)
-  scrim.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-  scrim.BackgroundTransparency = 0.45
-  scrim.BorderSizePixel = 0
-  scrim.ZIndex = 2
-  Instance.new("UICorner", scrim).CornerRadius = UDim.new(0, RADIUS)
-
-  -- Legge il background attualmente selezionato nell'hub (built-in o custom)
-  local function hubBgSource()
-    local hub = HubGui:FindFirstChild("AmousHub")
-    local main = hub and hub:FindFirstChild("Main")
-    return main and main:FindFirstChild("CustomBackground") or nil
-  end
-
+  -- ===================== STEAL BAR: pill (dot + % | barra) =====================
+  -- Layout: a sinistra dot bianco + "AUTO STEAL" e percentuale grande,
+  -- divisore verticale, a destra la barra bianca con i segmenti e sotto
+  -- "FPS xxx   PING xxms". Le scritte sono TextScaled: crescono con la
+  -- UIScale della barra senza rimpicciolirsi due volte.
   local bgSrcConn = nil
-  local function syncBarBackground()
-    local src = nil -- steal bar: no background image
-    if src and src.Image and src.Image ~= "" then
-      bgImage.Image = src.Image
-      bgImage.Visible = true
-      if not bgSrcConn then
-        bgSrcConn = src:GetPropertyChangedSignal("Image"):Connect(function()
-          if src.Image ~= "" then
-            bgImage.Image = src.Image
-            bgImage.Visible = true
-          else
-            bgImage.Visible = false
-          end
-        end)
-      end
-      return true
-    end
-    bgImage.Visible = false
-    return false
-  end
+  local function syncBarBackground() return false end
   _G.AmousStealBarSyncBackground = syncBarBackground
 
-  task.spawn(function()
-    for _ = 1, 40 do
-      if syncBarBackground() then break end
-      task.wait(0.25)
-    end
-  end)
+  local WHITE = Color3.fromRGB(255, 255, 255)
+  local TRACK_X, TRACK_Y, TRACK_W, TRACK_H = 130, 16, 188, 38
 
-  -- ===================== RIEMPIMENTO (tutta la card) =====================
-  local washClip = Instance.new("Frame", pbFrame)
-  washClip.Name = "WashClip"
-  washClip.Size = UDim2.new(0, 0, 1, 0)
-  washClip.BackgroundTransparency = 1
-  washClip.BorderSizePixel = 0
-  washClip.ClipsDescendants = true
-  washClip.ZIndex = 3
-
-  local wash = Instance.new("Frame", washClip)
-  wash.Name = "Wash"
-  wash.Size = UDim2.new(0, W, 1, 0)
-  wash.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-  wash.BorderSizePixel = 0
-  wash.ZIndex = 3
-  -- Stesso raggio della card: cosi' non restano angolini scoperti
-  Instance.new("UICorner", wash).CornerRadius = UDim.new(0, RADIUS)
-
-  local washGrad = Instance.new("UIGradient", wash)
-  washGrad.Rotation = 0
-  washGrad.Color = GRAD_ACTIVE
-  washGrad.Transparency = NumberSequence.new({
-    NumberSequenceKeypoint.new(0.00, 0.62),
-    NumberSequenceKeypoint.new(0.55, 0.44),
-    NumberSequenceKeypoint.new(1.00, 0.26),
-  })
-
-  local edge = Instance.new("Frame", pbFrame)
-  edge.Name = "Edge"
-  edge.AnchorPoint = Vector2.new(0.5, 0)
-  edge.Size = UDim2.new(0, 2, 1, 0)
-  edge.Position = UDim2.new(0, 0, 0, 0)
-  edge.BackgroundColor3 = Color3.fromRGB(232, 232, 232)
-  edge.BackgroundTransparency = 1
-  edge.BorderSizePixel = 0
-  edge.ZIndex = 4
-  local edgeGrad = Instance.new("UIGradient", edge)
-  edgeGrad.Rotation = 90
-  edgeGrad.Transparency = NumberSequence.new({
-    NumberSequenceKeypoint.new(0.00, 0.8),
-    NumberSequenceKeypoint.new(0.50, 0.05),
-    NumberSequenceKeypoint.new(1.00, 0.8),
-  })
-
-  -- ===================== TITOLO (centro, in alto) =====================
-  local hubTitleLbl = Instance.new("TextLabel", pbFrame)
-  hubTitleLbl.Name = "HubTitle"
-  hubTitleLbl.AnchorPoint = Vector2.new(0.5, 0.5)
-  hubTitleLbl.Position = UDim2.new(0.5, 0, 0.5, 0)
-  hubTitleLbl.Size = UDim2.new(0, 220, 0, 20)
-  hubTitleLbl.BackgroundTransparency = 1
-  hubTitleLbl.Text = "discord.gg/amouss"
-  hubTitleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-  hubTitleLbl.TextStrokeColor3 = Color3.fromRGB(8, 4, 24)
-  hubTitleLbl.TextStrokeTransparency = 0.35
-  hubTitleLbl.Font = Enum.Font.GothamBlack
-  hubTitleLbl.TextSize = 16
-  hubTitleLbl.TextXAlignment = Enum.TextXAlignment.Center
-  hubTitleLbl.TextYAlignment = Enum.TextYAlignment.Center
-  hubTitleLbl.ZIndex = 10
-
-  local hubTitleGrad = Instance.new("UIGradient", hubTitleLbl)
-  hubTitleGrad.Rotation = 0
-  hubTitleGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, Color3.fromRGB(227, 227, 227)),
-    ColorSequenceKeypoint.new(0.50, Color3.fromRGB(215, 215, 215)),
-    ColorSequenceKeypoint.new(1.00, Color3.fromRGB(174, 174, 174)),
-  })
-
-  -- ===================== SINISTRA: % sopra, STEAL sotto =====================
-  local leftHolder = Instance.new("Frame", pbFrame)
-  leftHolder.Name = "Left"
-  leftHolder.AnchorPoint = Vector2.new(0, 0.5)
-  leftHolder.Position = UDim2.new(0, 10, 0.5, 0)
-  leftHolder.Size = UDim2.new(0, 68, 0, 32)
-  leftHolder.BackgroundTransparency = 1
-  leftHolder.ZIndex = 10
-
-  local lList = Instance.new("UIListLayout", leftHolder)
-  lList.FillDirection = Enum.FillDirection.Horizontal
-  lList.VerticalAlignment = Enum.VerticalAlignment.Center
-  lList.SortOrder = Enum.SortOrder.LayoutOrder
-  lList.Padding = UDim.new(0, 7)
-
-  local LEFT_W = 68
-
-  local textStack = Instance.new("Frame", leftHolder)
-  textStack.Name = "TextStack"
-  textStack.LayoutOrder = 1
-  textStack.Size = UDim2.new(0, LEFT_W, 0, 32)
-  textStack.BackgroundTransparency = 1
-  textStack.ZIndex = 10
-
-  local sList = Instance.new("UIListLayout", textStack)
-  sList.FillDirection = Enum.FillDirection.Vertical
-  sList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-  sList.VerticalAlignment = Enum.VerticalAlignment.Center
-  sList.SortOrder = Enum.SortOrder.LayoutOrder
-  sList.Padding = UDim.new(0, 2)
-
-  -- Riga superiore: percentuale (stesso stile dei valori FPS/MS)
-  local pctRow = Instance.new("Frame", textStack)
-  pctRow.Name = "PctRow"
-  pctRow.LayoutOrder = 1
-  pctRow.Size = UDim2.new(1, 0, 0, 13)
-  pctRow.BackgroundTransparency = 1
-  pctRow.ZIndex = 10
-
-  local progressPct = Instance.new("TextLabel", pctRow)
-  progressPct.Name = "Percent"
-  progressPct.Size = UDim2.new(1, 0, 1, 0)
-  progressPct.BackgroundTransparency = 1
-  progressPct.Text = "0%"
-  progressPct.TextColor3 = C.txtDim
-  progressPct.Font = Enum.Font.GothamBlack
-  progressPct.TextSize = 12
-  progressPct.TextXAlignment = Enum.TextXAlignment.Left
-  progressPct.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-  progressPct.TextStrokeTransparency = 0.6
-  progressPct.ZIndex = 10
-
-  -- Riga inferiore: stato
-  local stateRow = Instance.new("Frame", textStack)
-  stateRow.Name = "StateRow"
-  stateRow.LayoutOrder = 3
-  stateRow.Size = UDim2.new(1, 0, 0, 13)
-  stateRow.BackgroundTransparency = 1
-  stateRow.ZIndex = 10
-
-  local stealLbl = Instance.new("TextLabel", stateRow)
-  stealLbl.Name = "StateLabel"
-  stealLbl.Size = UDim2.new(1, 0, 1, 0)
-  stealLbl.BackgroundTransparency = 1
-  stealLbl.Text = "STEAL"
-  stealLbl.TextColor3 = C.txtDim
-  stealLbl.Font = Enum.Font.GothamBlack
-  stealLbl.TextSize = 12
-  stealLbl.TextXAlignment = Enum.TextXAlignment.Left
-  stealLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-  stealLbl.TextStrokeTransparency = 0.6
-  stealLbl.ZIndex = 10
-
-  -- ===================== DESTRA: FPS sopra, linea, MS sotto =====================
-  local STAT_W = 60
-
-  local rightHolder = Instance.new("Frame", pbFrame)
-  rightHolder.Name = "Stats"
-  rightHolder.AnchorPoint = Vector2.new(1, 0.5)
-  rightHolder.Position = UDim2.new(1, -12, 0.5, 0)
-  rightHolder.Size = UDim2.new(0, STAT_W, 0, 32)
-  rightHolder.BackgroundTransparency = 1
-  rightHolder.ZIndex = 10
-
-  local rList = Instance.new("UIListLayout", rightHolder)
-  rList.FillDirection = Enum.FillDirection.Vertical
-  rList.HorizontalAlignment = Enum.HorizontalAlignment.Right
-  rList.VerticalAlignment = Enum.VerticalAlignment.Center
-  rList.SortOrder = Enum.SortOrder.LayoutOrder
-  rList.Padding = UDim.new(0, 2)
-
-  local function statRow(order, caption)
-    local row = Instance.new("Frame", rightHolder)
-    row.Name = caption .. "Row"
-    row.LayoutOrder = order
-    row.Size = UDim2.new(1, 0, 0, 13)
-    row.BackgroundTransparency = 1
-    row.ZIndex = 10
-
-    local rl = Instance.new("UIListLayout", row)
-    rl.FillDirection = Enum.FillDirection.Horizontal
-    -- Centrato: valore + sigla vengono trattati come un blocco unico,
-    -- cosi' stanno esattamente a meta' della lineetta divisoria
-    rl.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    rl.VerticalAlignment = Enum.VerticalAlignment.Center
-    rl.SortOrder = Enum.SortOrder.LayoutOrder
-    rl.Padding = UDim.new(0, 3)
-
-    local val = Instance.new("TextLabel", row)
-    val.Name = "Value"
-    val.LayoutOrder = 1
-    val.Size = UDim2.new(0, 0, 1, 0)
-    val.AutomaticSize = Enum.AutomaticSize.X
-    val.BackgroundTransparency = 1
-    val.Text = "--"
-    val.TextColor3 = C.txt
-    val.Font = Enum.Font.GothamBlack
-    val.TextSize = 12
-    val.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    val.TextStrokeTransparency = 0.6
-    val.ZIndex = 10
-
-    local cap = Instance.new("TextLabel", row)
-    cap.LayoutOrder = 2
-    cap.Size = UDim2.new(0, 0, 1, 0)
-    cap.AutomaticSize = Enum.AutomaticSize.X
-    cap.BackgroundTransparency = 1
-    cap.Text = caption
-    cap.TextColor3 = C.txtDim
-    cap.Font = Enum.Font.GothamBold
-    cap.TextSize = 9
-    cap.TextXAlignment = Enum.TextXAlignment.Center
-    cap.ZIndex = 10
-    return val
+  local function mkText(name, text, font, maxSize, pos, size, xAlign)
+    local t = Instance.new("TextLabel")
+    t.Name = name
+    t.BackgroundTransparency = 1
+    t.Text = text
+    t.TextColor3 = WHITE
+    t.Font = font
+    t.TextSize = maxSize
+    t.TextScaled = true
+    t.TextXAlignment = xAlign
+    t.TextYAlignment = Enum.TextYAlignment.Center
+    t.Position = pos
+    t.Size = size
+    t.ZIndex = 10
+    local c = Instance.new("UITextSizeConstraint")
+    c.MaxTextSize = maxSize
+    c.MinTextSize = 4
+    c.Parent = t
+    t.Parent = pbFrame
+    return t
   end
 
-  local sbFpsLabel = statRow(1, "FPS")
-  sbFpsLabel.Name = "SBFps"
+  local dot = Instance.new("Frame")
+  dot.Name = "Dot"
+  dot.Size = UDim2.new(0, 15, 0, 15)
+  dot.Position = UDim2.new(0, 15, 0, 17)
+  dot.BackgroundColor3 = WHITE
+  dot.BorderSizePixel = 0
+  dot.ZIndex = 10
+  Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+  local dotHalo = Instance.new("UIStroke", dot)
+  dotHalo.Color = WHITE
+  dotHalo.Thickness = 3
+  dotHalo.Transparency = 0.72
+  dot.Parent = pbFrame
 
-  local statDiv = Instance.new("Frame", rightHolder)
-  statDiv.Name = "StatDivider"
-  statDiv.LayoutOrder = 2
-  statDiv.Size = UDim2.new(1, 0, 0, 1)
-  statDiv.BackgroundColor3 = C.line
-  statDiv.BackgroundTransparency = 0.5
-  statDiv.BorderSizePixel = 0
-  statDiv.ZIndex = 10
+  local stealLbl = mkText("StateLabel", "AUTO STEAL", Enum.Font.GothamBlack, 13,
+    UDim2.new(0, 38, 0, 16), UDim2.new(0, 76, 0, 14), Enum.TextXAlignment.Left)
+  local progressPct = mkText("Percent", "0%", Enum.Font.GothamBlack, 28,
+    UDim2.new(0, 14, 0, 38), UDim2.new(0, 96, 0, 34), Enum.TextXAlignment.Left)
 
-  local sbPingLabel = statRow(3, "MS")
-  sbPingLabel.Name = "SBPing"
+  local divider = Instance.new("Frame")
+  divider.Name = "Divider"
+  divider.Position = UDim2.new(0, 121, 0, 16)
+  divider.Size = UDim2.new(0, 1, 0, 62)
+  divider.BackgroundColor3 = Color3.fromRGB(70, 68, 84)
+  divider.BackgroundTransparency = 0.25
+  divider.BorderSizePixel = 0
+  divider.ZIndex = 10
+  divider.Parent = pbFrame
 
-  local progressRadLbl = Instance.new("TextLabel", pbFrame)
-  progressRadLbl.Size = UDim2.new(0, 0, 0, 0)
-  progressRadLbl.Visible = false
+  local track = Instance.new("Frame")
+  track.Name = "Track"
+  track.Position = UDim2.new(0, TRACK_X, 0, TRACK_Y)
+  track.Size = UDim2.new(0, TRACK_W, 0, TRACK_H)
+  track.BackgroundColor3 = Color3.fromRGB(32, 30, 42)
+  track.BorderSizePixel = 0
+  track.ZIndex = 5
+  Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+  local trackStroke = Instance.new("UIStroke", track)
+  trackStroke.Color = Color3.fromRGB(58, 56, 72)
+  trackStroke.Thickness = 1
+  trackStroke.Transparency = 0.4
+  track.Parent = pbFrame
+
+  local fill = Instance.new("Frame")
+  fill.Name = "Fill"
+  fill.Size = UDim2.new(0, 0, 1, 0)
+  fill.BackgroundColor3 = WHITE
+  fill.BorderSizePixel = 0
+  fill.ClipsDescendants = true
+  fill.ZIndex = 6
+  Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+  local fillGrad = Instance.new("UIGradient", fill)
+  fillGrad.Rotation = 0
+  fillGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(238, 240, 250)),
+    ColorSequenceKeypoint.new(1, WHITE),
+  })
+  fill.Parent = track
+
+  -- Segmenti (1/6 ciascuno): visibili solo sopra la parte gia' riempita
+  local tickHolder = Instance.new("Frame")
+  tickHolder.Name = "Ticks"
+  tickHolder.Size = UDim2.new(0, TRACK_W, 1, 0)
+  tickHolder.BackgroundTransparency = 1
+  tickHolder.BorderSizePixel = 0
+  tickHolder.ZIndex = 7
+  tickHolder.Parent = fill
+  local ticks = {}
+  for k = 1, 5 do
+    local x = math.floor(TRACK_W * k / 6 + 0.5)
+    local tk = Instance.new("Frame")
+    tk.Name = "Tick" .. k
+    tk.AnchorPoint = Vector2.new(0.5, 0.5)
+    tk.Position = UDim2.new(0, x, 0.5, 0)
+    tk.Size = UDim2.new(0, 1, 0.7, 0)
+    tk.BackgroundColor3 = Color3.fromRGB(120, 126, 150)
+    tk.BackgroundTransparency = 0.55
+    tk.BorderSizePixel = 0
+    tk.ZIndex = 7
+    tk.Visible = false
+    tk.Parent = tickHolder
+    ticks[k] = { frame = tk, x = x }
+  end
+
+  local statLbl = mkText("Stats", "FPS --   PING --", Enum.Font.GothamBold, 12,
+    UDim2.new(0, TRACK_X, 0, 68), UDim2.new(0, TRACK_W, 0, 16), Enum.TextXAlignment.Center)
 
   -- ===================== STATO =====================
   local barState = "IDLE"
@@ -27463,47 +26901,32 @@ _G.__AmousDuelsSetupStealBar = function()
   function setBarState(state)
     state = tostring(state or "IDLE"):upper()
     barState = state
-    local active = (state ~= "IDLE")
-    local done = (state == "DONE" or state == "SUCCESS" or state == "STOLEN")
-
-    stealLbl.Text = (state == "IDLE") and "STEAL" or state
-    washGrad.Color = done and GRAD_DONE or (active and GRAD_ACTIVE or GRAD_IDLE)
-
-    local col = active and C.txt or C.txtDim
-    TS:Create(stealLbl,    TweenInfo.new(0.18), {TextColor3 = col}):Play()
-    TS:Create(progressPct, TweenInfo.new(0.18), {TextColor3 = col}):Play()
-    TS:Create(cardStroke,  TweenInfo.new(0.22), {Transparency = active and 0.1 or 0.45}):Play()
+    stealLbl.Text = (state == "IDLE" or state == "STEALING") and "AUTO STEAL" or state
+    TS:Create(cardStroke, TweenInfo.new(0.22), {Transparency = (state ~= "IDLE") and 0.2 or 0.5}):Play()
   end
 
-  -- Riempimento agganciato 1:1 al progresso reale.
-  -- Lo smoothing serve solo a togliere il tremolio tra un update e l'altro:
-  -- e' molto rapido e non anticipa mai il valore vero.
+  local function updateTicks()
+    local fw = shownP * TRACK_W
+    for _, t in ipairs(ticks) do
+      t.frame.Visible = fw > (t.x + 12)
+    end
+  end
+
+  -- Riempimento agganciato 1:1 al progresso reale (smoothing solo anti-tremolio)
   local renderConn
   renderConn = RunService.RenderStepped:Connect(function(dt)
     if not pbFrame.Parent then
       pcall(function() renderConn:Disconnect() end)
       return
     end
-
     if shownP ~= targetP then
       local a = 1 - math.exp(-38 * math.min(dt, 0.1))
       shownP = shownP + (targetP - shownP) * a
       if math.abs(targetP - shownP) < 0.004 then shownP = targetP end
     end
-
-    washClip.Size = UDim2.new(shownP, 0, 1, 0)
+    fill.Size = UDim2.new(shownP, 0, 1, 0)
     progressPct.Text = math.floor(shownP * 100 + 0.5) .. "%"
-
-    -- La testina si spegne prima di toccare il bordo: altrimenti a fine
-    -- riempimento restava una lineetta chiara incollata al bordo destro
-    -- La puntina compare solo a riempimento gia' avviato e sparisce prima
-    -- del bordo: cosi' non lampeggia sulla posizione vecchia dopo un reset.
-    if shownP > 0.05 and shownP < 0.94 and targetP > 0.05 and targetP < 0.999 and barState ~= "IDLE" then
-      edge.BackgroundTransparency = 0.2
-      edge.Position = UDim2.new(shownP, 0, 0, 0)
-    else
-      edge.BackgroundTransparency = 1
-    end
+    updateTicks()
   end)
 
   -- ===================== API =====================
@@ -27515,20 +26938,18 @@ _G.__AmousDuelsSetupStealBar = function()
     -- A fondo corsa niente interpolazione: il pieno deve comparire subito
     if p >= 0.999 then
       shownP = 1
-      washClip.Size = UDim2.new(1, 0, 1, 0)
-      edge.BackgroundTransparency = 1
+      fill.Size = UDim2.new(1, 0, 1, 0)
       progressPct.Text = "100%"
+      updateTicks()
     end
   end
 
   function StealBar.Reset()
     targetP = 0
     shownP = 0
-    washClip.Size = UDim2.new(0, 0, 1, 0)
-    wash.BackgroundTransparency = 0
-    edge.BackgroundTransparency = 1
-    edge.Position = UDim2.new(0, 0, 0, 0)
+    fill.Size = UDim2.new(0, 0, 1, 0)
     progressPct.Text = "0%"
+    updateTicks()
     setBarState("IDLE")
   end
 
@@ -27567,24 +26988,7 @@ _G.__AmousDuelsSetupStealBar = function()
         end)
       end
 
-      sbFpsLabel.Text = tostring(sbFpsCurrent)
-      sbPingLabel.Text = tostring(sbPingCurrent)
-
-      if sbFpsCurrent >= 120 then
-        sbFpsLabel.TextColor3 = C.good
-      elseif sbFpsCurrent >= 60 then
-        sbFpsLabel.TextColor3 = C.warn
-      else
-        sbFpsLabel.TextColor3 = C.bad
-      end
-
-      if sbPingCurrent <= 50 then
-        sbPingLabel.TextColor3 = C.good
-      elseif sbPingCurrent <= 100 then
-        sbPingLabel.TextColor3 = C.warn
-      else
-        sbPingLabel.TextColor3 = C.bad
-      end
+      statLbl.Text = "FPS " .. tostring(sbFpsCurrent) .. "   PING " .. tostring(sbPingCurrent) .. "ms"
 
       -- Il background dell'hub puo' essere cambiato dalle impostazioni
       pcall(syncBarBackground)
@@ -28894,9 +28298,6 @@ local defaults = {
     tpBat   = UDim2.new(1, x1, 0.5, y1),
     aimbot       = UDim2.new(1, x2, 0.5, y2),
     instantReset = UDim2.new(1, x1, 0.5, y2),
-    -- Float sta nella casella sotto Auto Play, quella lasciata libera da
-    -- Auto Right quando i due bottoni sono diventati uno solo.
-    float        = UDim2.new(1, x3, 0.5, y2),
     tp           = UDim2.new(1, x2, 0.5, y3),
     carry        = UDim2.new(1, x3, 0.5, y3),
     laggerNormal = UDim2.new(1, x2, 0.5, y4),
@@ -28985,13 +28386,6 @@ local defaults = {
     pulse(btn)
   end)
 
-  makeButton("float", "FLOAT", defaults.float, function(btn)
-    if _G.AmousFloatToggle then _G.AmousFloatToggle() end
-    task.delay(0.03, function()
-      setActive(btn, _G.AmousFloatOn == true)
-    end)
-  end)
-
   makeButton("tp", "TP\nDOWN", defaults.tp, function(btn)
     if runTPFloor then runTPFloor() end
     pulse(btn)
@@ -29052,9 +28446,6 @@ local defaults = {
       end
       -- e la stessa versione nella lista Hide Mobile Buttons
       if _G._AmbHideOptLabel_aimbot then pcall(_G._AmbHideOptLabel_aimbot) end
-    end
-    if mobileButtons.float then
-      mobileButtons.float.setActive(_G.AmousFloatOn == true)
     end
     if mobileButtons.tpBat then
       mobileButtons.tpBat.setActive(_G.AmousTPBatMobileActive and _G.AmousTPBatMobileActive() or false)
